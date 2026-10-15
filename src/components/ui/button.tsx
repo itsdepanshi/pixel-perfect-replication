@@ -9,6 +9,10 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        system: "rounded-none text-muted-foreground hover:bg-accent hover:text-primary focus-visible:ring-primary",
+        shortcut: "rounded-none text-muted-foreground hover:bg-accent/60 hover:text-primary focus-visible:ring-primary",
+        task: "rounded-none border border-transparent text-muted-foreground hover:bg-accent hover:text-primary data-[running=true]:text-foreground data-[active=true]:border-border data-[active=true]:bg-accent data-[active=true]:text-primary",
+        window: "rounded-none text-muted-foreground hover:bg-accent hover:text-primary",
         default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
         destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
