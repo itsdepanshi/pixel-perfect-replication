@@ -14,9 +14,9 @@ export function AppWindow({ window: w }: { window: WindowState }) {
     <header className="window-titlebar" onDoubleClick={event => { if (!(event.target as HTMLElement).closest("button")) manager.maximize(w.id); }} onPointerDown={event => {
       if (w.maximized || event.button !== 0 || (event.target as HTMLElement).closest("button")) return;
       event.currentTarget.setPointerCapture(event.pointerId);
-      event.currentTarget.dataset.offsetX = String(event.clientX - w.x);
-      event.currentTarget.dataset.offsetY = String(event.clientY - w.y);
-    }} onPointerMove={event => { if (!event.currentTarget.hasPointerCapture(event.pointerId)) return; manager.move(w.id, event.clientX - Number(event.currentTarget.dataset.offsetX), event.clientY - Number(event.currentTarget.dataset.offsetY)); }} onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }}>
+      event.currentTarget.dataset['offsetX'] = String(event.clientX - w.x);
+      event.currentTarget.dataset['offsetY'] = String(event.clientY - w.y);
+    }} onPointerMove={event => { if (!event.currentTarget.hasPointerCapture(event.pointerId)) return; manager.move(w.id, event.clientX - Number(event.currentTarget.dataset['offsetX']), event.clientY - Number(event.currentTarget.dataset['offsetY'])); }} onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }}>
       <div className="window-title"><Icon size={15} /><span>{app.name.toLowerCase()}</span><span className="window-path">{w.id === "terminal" ? "— root@nexus: ~" : `— /${w.id}`}</span></div>
       <div className="window-controls"><Button variant="window" size="icon" title={`Minimize ${app.name}`} aria-label={`Minimize ${app.name}`} onClick={() => manager.minimize(w.id)}><Minus /></Button><Button variant="window" size="icon" title={`${w.maximized ? "Restore" : "Maximize"} ${app.name}`} aria-label={`${w.maximized ? "Restore" : "Maximize"} ${app.name}`} onClick={() => manager.maximize(w.id)}>{w.maximized ? <Copy /> : <Square />}</Button><Button variant="window" size="icon" className="close-control" title={`Close ${app.name}`} aria-label={`Close ${app.name}`} onClick={() => manager.close(w.id)}><X /></Button></div>
     </header>
