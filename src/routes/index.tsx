@@ -1,24 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { DesktopShell } from "@/components/nexus/desktop-shell";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({ meta: [
+    { title: "NEXUS OS — Your system. Your rules." },
+    { name: "description", content: "A local hacker desktop with a safe terminal, movable application windows, and a phosphor-green operating environment." },
+    { property: "og:title", content: "NEXUS OS — Your system. Your rules." },
+    { property: "og:description", content: "Enter a browser-contained hacker desktop with a safe terminal and six application previews." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
+  component: DesktopShell,
 });
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
