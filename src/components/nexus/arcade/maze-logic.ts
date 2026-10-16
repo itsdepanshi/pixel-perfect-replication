@@ -54,12 +54,12 @@ function build(level: number, seed: number): MazeLevel {
   const w = cw * 2 + 1, h = ch * 2 + 1;
   const L: MazeLevel = { level, seed, w, h, walls: Array(w * h).fill(true), start: { x: 1, y: 1 }, exit: { x: 1, y: 1 }, key: { x: 1, y: 1 }, gate: { x: 1, y: 1 }, switchAt: null, firewallA: [], firewallB: [], fragments: [], drones: [] };
   const stack: Pt[] = [{ x: 1, y: 1 }];
-  L.walls[idx(L, stack[0])] = false;
+  L.walls[idx(L, { x: 1, y: 1 })] = false;
   while (stack.length) {
-    const p = stack[stack.length - 1];
+    const p = stack[stack.length - 1]!;
     const options = (Object.keys(DV) as Dir[]).map(d => ({ x: p.x + DV[d].x * 2, y: p.y + DV[d].y * 2 })).filter(n => n.x > 0 && n.y > 0 && n.x < w - 1 && n.y < h - 1 && L.walls[idx(L, n)]);
     if (!options.length) { stack.pop(); continue; }
-    const n = options[Math.floor(r() * options.length)];
+    const n = options[Math.floor(r() * options.length)]!;
     L.walls[idx(L, { x: (p.x + n.x) / 2, y: (p.y + n.y) / 2 })] = false;
     L.walls[idx(L, n)] = false;
     stack.push(n);
@@ -67,7 +67,7 @@ function build(level: number, seed: number): MazeLevel {
   const floorNeighbors = (p: Pt) => neighbors(p).filter(n => !L.walls[idx(L, n)]).length;
   const fromStart = distances(L, L.start);
   const deadEnds = [...fromStart.keys()].map(i => toPt(L, i)).filter(p => !same(p, L.start) && floorNeighbors(p) === 1);
-  L.exit = deadEnds.sort((a, b) => fromStart.get(idx(L, b))! - fromStart.get(idx(L, a))!)[0];
+  L.exit = deadEnds.sort((a, b) => fromStart.get(idx(L, b))! - fromStart.get(idx(L, a))!)[0]!;
   L.gate = neighbors(L.exit).find(n => !L.walls[idx(L, n)])!;
   // Carve loops for alternative routes, never next to the exit so the gate stays mandatory.
   const loops = Math.floor(cw * ch * 0.1);
@@ -80,20 +80,20 @@ function build(level: number, seed: number): MazeLevel {
   }
   const beforeGate = distances(L, L.start, [L.gate]);
   const far = [...beforeGate.entries()].filter(([, d]) => d > 6).map(([i]) => toPt(L, i)).filter(p => !same(p, L.exit));
-  L.key = far.length ? far[Math.floor(r() * far.length)] : toPt(L, [...beforeGate.keys()].pop()!);
+  L.key = far.length ? far[Math.floor(r() * far.length)]! : toPt(L, [...beforeGate.keys()].pop()!);
   const special = (p: Pt) => same(p, L.start) || same(p, L.exit) || same(p, L.gate) || same(p, L.key) || (L.switchAt !== null && same(p, L.switchAt));
   const floors = [...distances(L, L.start).keys()].map(i => toPt(L, i));
   if (level >= 2) {
     const reachable = [...beforeGate.keys()].map(i => toPt(L, i)).filter(p => !special(p) && Math.abs(p.x - 1) + Math.abs(p.y - 1) > 3);
     L.switchAt = reachable[Math.floor(r() * reachable.length)] ?? null;
     const corridors = floors.filter(p => !special(p) && floorNeighbors(p) === 2 && Math.abs(p.x - 1) + Math.abs(p.y - 1) > 3);
-    for (let i = 0; i < 3 && corridors.length; i++) L.firewallA.push(corridors.splice(Math.floor(r() * corridors.length), 1)[0]);
-    for (let i = 0; i < 2 && corridors.length; i++) L.firewallB.push(corridors.splice(Math.floor(r() * corridors.length), 1)[0]);
+    for (let i = 0; i < 3 && corridors.length; i++) L.firewallA.push(corridors.splice(Math.floor(r() * corridors.length), 1)[0]!);
+    for (let i = 0; i < 2 && corridors.length; i++) L.firewallB.push(corridors.splice(Math.floor(r() * corridors.length), 1)[0]!);
   }
   const blocked = (p: Pt) => special(p) || has(L.firewallA, p) || has(L.firewallB, p);
   const ends = floors.filter(p => !blocked(p) && floorNeighbors(p) === 1);
   const pool = [...ends, ...floors.filter(p => !blocked(p) && floorNeighbors(p) !== 1)];
-  for (let i = 0; i < 3 + level && i < pool.length; i++) L.fragments.push(pool[i < ends.length ? i : Math.floor(r() * pool.length)]);
+  for (let i = 0; i < 3 + level && i < pool.length; i++) L.fragments.push(pool[i < ends.length ? i : Math.floor(r() * pool.length)]!);
   L.fragments = L.fragments.filter((p, i) => L.fragments.findIndex(q => same(p, q)) === i);
   if (level >= 3) {
     const runs: Pt[][] = [];
@@ -105,7 +105,7 @@ function build(level: number, seed: number): MazeLevel {
         else { if (run.length >= 4 && run.every(q => q.x + q.y > 7)) runs.push(run); run = []; }
       }
     }
-    for (let i = 0; i < Math.min(level - 2, 4) && runs.length; i++) L.drones.push(runs.splice(Math.floor(r() * runs.length), 1)[0]);
+    for (let i = 0; i < Math.min(level - 2, 4) && runs.length; i++) L.drones.push(runs.splice(Math.floor(r() * runs.length), 1)[0]!);
   }
   return L;
 }
@@ -135,7 +135,7 @@ function enterLevel(run: Omit<MazeRun, "L" | "pos" | "sw" | "key" | "collected" 
 export function startMaze(mode: MazeMode, difficulty: Difficulty, baseSeed: number): MazeRun {
   return enterLevel({ mode, difficulty, baseSeed, lives: { easy: 5, normal: 3, hard: 2 }[difficulty], score: 0, levelsCleared: 0, totalFragments: 0, stealthClears: 0, message: "", hitId: 0 }, 1);
 }
-export const dronePositions = (run: MazeRun) => run.L.drones.map((path, i) => path[run.drone[i].i]);
+export const dronePositions = (run: MazeRun) => run.L.drones.map((path, i) => path[run.drone[i]!.i]!);
 function detects(run: MazeRun, p: Pt) {
   return dronePositions(run).some(d => {
     if (same(d, p)) return true;
@@ -168,7 +168,7 @@ export function moveMaze(run: MazeRun, d: Dir): MazeRun {
 export function tickDrones(run: MazeRun): MazeRun {
   if (run.status !== "playing" || !run.L.drones.length) return run;
   const drone = run.drone.map((s, k) => {
-    const len = run.L.drones[k].length;
+    const len = run.L.drones[k]!.length;
     let step = s.step;
     if (s.i + step < 0 || s.i + step >= len) step = -step;
     return { i: s.i + step, step };
