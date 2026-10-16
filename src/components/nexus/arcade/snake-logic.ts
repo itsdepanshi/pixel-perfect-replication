@@ -17,7 +17,7 @@ const modifiers = (m: SnakeMode) => m !== "classic";
 export const outside = (s: Pick<SnakeState, "inset">, p: Pt, inset = s.inset) => p.x < inset || p.y < inset || p.x >= SNAKE_W - inset || p.y >= SNAKE_H - inset;
 
 function freeCell(s: SnakeState, r: () => number, minHeadDistance = 0): Pt {
-  const head = s.snake[0];
+  const head = s.snake[0]!;
   const inset = s.shrinkAt !== null ? s.inset + 1 : s.inset;
   for (let i = 0; i < 800; i++) {
     const p = { x: Math.floor(r() * SNAKE_W), y: Math.floor(r() * SNAKE_H) };
@@ -50,7 +50,7 @@ export function turn(s: SnakeState, d: Dir): SnakeState {
 }
 
 function moveOnce(n: SnakeState, r: () => number) {
-  const head = n.snake[0];
+  const head = n.snake[0]!;
   const next = { x: head.x + DV[n.dir].x, y: head.y + DV[n.dir].y };
   if (outside(n, next)) { n.alive = false; n.cause = "Hit the arena firewall"; return; }
   const eating = same(next, n.food);

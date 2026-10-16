@@ -52,7 +52,7 @@ export function MazeGame({ suspended, onExit }: GameProps) {
   ]}>{mode === "seeded" && <label className="arcade-toggle">SEED <input className="arcade-seed" inputMode="numeric" value={seedText} onChange={e => setSeedText(e.target.value.replace(/\D/g, "").slice(0, 9))} aria-label="Maze seed" /></label>}</SetupScreen>;
 
   const L = run.L;
-  const drones = dronePositions(run);
+  const drones = dronePositions(run).filter((p): p is Pt => !!p);
   const inList = (list: Pt[], p: Pt) => list.some(q => same(q, p));
   const cells = [];
   for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) {

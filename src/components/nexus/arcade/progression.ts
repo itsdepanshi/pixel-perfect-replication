@@ -51,9 +51,9 @@ export function useProfile() {
 }
 export function rankFor(xp: number) {
   let i = 0;
-  while (i + 1 < RANKS.length && xp >= RANKS[i + 1].xp) i++;
+  while (i + 1 < RANKS.length && xp >= RANKS[i + 1]!.xp) i++;
   const next = RANKS[i + 1];
-  return { rank: RANKS[i].name, next: next?.name ?? null, progress: next ? (xp - RANKS[i].xp) / (next.xp - RANKS[i].xp) : 1, toNext: next ? next.xp - xp : 0 };
+  return { rank: RANKS[i]!.name, next: next?.name ?? null, progress: next ? (xp - RANKS[i]!.xp) / (next.xp - RANKS[i]!.xp) : 1, toNext: next ? next.xp - xp : 0 };
 }
 /* Notices let mid-game unlocks surface without coupling games to the arcade shell. */
 let notices: { id: number; text: string }[] = [];
@@ -74,9 +74,9 @@ function grant(p: Profile, ids: string[]) {
     if (!ACHIEVEMENTS[id] || p.achievements.includes(id)) continue;
     p.achievements.push(id);
     unlocked.push(id);
-    const reward = ACHIEVEMENTS[id].reward;
+    const reward = ACHIEVEMENTS[id]!.reward;
     if (reward && !p.cosmetics.includes(reward)) p.cosmetics.push(reward);
-    notify(`ACHIEVEMENT — ${ACHIEVEMENTS[id].name}${reward ? ` · unlocked ${COSMETICS[reward].name}` : ""}`);
+    notify(`ACHIEVEMENT — ${ACHIEVEMENTS[id]!.name}${reward ? ` · unlocked ${COSMETICS[reward]!.name}` : ""}`);
   }
   return unlocked;
 }
@@ -86,7 +86,7 @@ export function unlock(ids: string[]) {
   if (unlocked.length) save(p);
   return unlocked;
 }
-export type RunInput = { game: GameId; mode: string; score: number; durationSec: number; xpBase: number; completed?: boolean; achievements?: string[]; challenge?: string; stats?: Record<string, number> };
+export type RunInput = { game: GameId; mode: string; score: number; durationSec: number; xpBase: number; completed?: boolean; achievements?: string[]; challenge?: string | undefined; stats?: Record<string, number> };
 export type RunResult = { xp: number; record: boolean; previousBest: number; unlocked: string[]; rankUp: string | null; counted: boolean };
 /** Single entry point for all games. Very short abandoned runs earn nothing so resets cannot farm XP. */
 export function recordRun(r: RunInput): RunResult {

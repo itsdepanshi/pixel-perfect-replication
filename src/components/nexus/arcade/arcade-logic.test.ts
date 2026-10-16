@@ -10,7 +10,7 @@ describe("snake", () => {
     let s = createSnake("classic", 1);
     s = turn(s, "left");
     expect(s.queue).toEqual([]);
-    s = { ...s, food: { x: 7, y: s.snake[0].y } };
+    s = { ...s, food: { x: 7, y: s.snake[0]!.y } };
     s = stepSnake(s);
     expect(s.snake[0]).toEqual({ x: 7, y: 8 });
     expect(s.snake.length).toBe(4);

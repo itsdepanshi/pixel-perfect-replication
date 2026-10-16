@@ -51,7 +51,7 @@ export function ArcadeApp({ suspended }: { suspended: boolean }) {
       <h3>ACHIEVEMENTS</h3>
       <ul className="achievement-list">{Object.entries(ACHIEVEMENTS).map(([id, a]) => {
         const got = profile.achievements.includes(id);
-        return <li key={id} data-unlocked={got}>{got ? <Trophy size={14} /> : <Lock size={14} />}<div><strong>{got || !a.secret ? a.name : "???"}</strong><span>{got || !a.secret ? a.desc : "Hidden achievement — keep exploring."}</span></div>{a.reward && <em>{got || !a.secret ? COSMETICS[a.reward].name : "???"}</em>}</li>;
+        return <li key={id} data-unlocked={got}>{got ? <Trophy size={14} /> : <Lock size={14} />}<div><strong>{got || !a.secret ? a.name : "???"}</strong><span>{got || !a.secret ? a.desc : "Hidden achievement — keep exploring."}</span></div>{a.reward && <em>{got || !a.secret ? COSMETICS[a.reward]?.name : "???"}</em>}</li>;
       })}</ul>
       <h3>UNLOCKABLES</h3>
       <ul className="cosmetic-list">{Object.entries(COSMETICS).map(([id, c]) => {

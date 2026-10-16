@@ -9,7 +9,7 @@ export function createRng(seed: number) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-export const pick = <T,>(r: () => number, list: readonly T[]) => list[Math.floor(r() * list.length)];
+export const pick = <T,>(r: () => number, list: readonly T[]) => list[Math.floor(r() * list.length)]!;
 export function dailySeed(d = new Date()) {
   return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
 }

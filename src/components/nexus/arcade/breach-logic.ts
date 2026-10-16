@@ -21,7 +21,7 @@ export function makeChallenge(level: number, r: () => number): Challenge {
   const roll = r();
   if (level >= 3 && roll < 0.16) return { kind: "decoy", prompt: pick(r, level > 4 ? TIER3 : TIER2), answer: "", label: "SOURCE: UNVERIFIED" };
   if (level >= 2 && roll < 0.36) { const word = pick(r, DECODE_WORDS); return { kind: "decode", prompt: word.split("").reverse().join(""), answer: word, label: "DECODE: REVERSED STREAM" }; }
-  if (level >= 2 && roll < 0.52) { let seq = ""; for (let i = 0; i < 3 + Math.floor(level / 2); i++) seq += SYMBOLS[Math.floor(r() * SYMBOLS.length)]; return { kind: "symbols", prompt: seq, answer: seq, label: "PATTERN: SYMBOL KEY" }; }
+  if (level >= 2 && roll < 0.52) { let seq = ""; for (let i = 0; i < 3 + Math.floor(level / 2); i++) seq += SYMBOLS.charAt(Math.floor(r() * SYMBOLS.length)); return { kind: "symbols", prompt: seq, answer: seq, label: "PATTERN: SYMBOL KEY" }; }
   const list = level <= 1 ? TIER1 : level <= 3 ? [...TIER1, ...TIER2] : level <= 5 ? TIER2 : [...TIER2, ...TIER3];
   const cmd = pick(r, list);
   return { kind: "type", prompt: cmd, answer: cmd, label: "SOURCE: SIGNED" };

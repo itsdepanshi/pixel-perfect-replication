@@ -59,11 +59,11 @@ export function Summary({ title, score, result, stats, onRetry, onBack, children
     {result?.record && <p className="summary-record">NEW PERSONAL BEST{result.previousBest ? ` — previous ${result.previousBest}` : ""}</p>}
     <dl className="summary-stats">{stats.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}<div><dt>XP</dt><dd>{result?.counted ? `+${result.xp}` : "0 (run too short)"}</dd></div></dl>
     {result?.rankUp && <p className="summary-record">RANK UP — {result.rankUp}</p>}
-    {!!result?.unlocked.length && <ul className="summary-unlocks">{result.unlocked.map(id => <li key={id}><Trophy size={11} /> {ACHIEVEMENTS[id].name}</li>)}</ul>}
+    {!!result?.unlocked.length && <ul className="summary-unlocks">{result.unlocked.map(id => <li key={id}><Trophy size={11} /> {ACHIEVEMENTS[id]?.name}</li>)}</ul>}
     <div className="arcade-actions">{children}<Button onClick={onRetry}><RotateCcw /> Retry</Button><Button variant="system" onClick={onBack}><ArrowLeft /> Arcade</Button></div>
   </div></div>;
 }
-export function Hud({ items, onPause }: { items: [string, ReactNode][]; onPause?: () => void }) {
+export function Hud({ items, onPause }: { items: [string, ReactNode][]; onPause?: (() => void) | undefined }) {
   return <div className="arcade-hud">{items.map(([k, v]) => <div key={k}><span>{k}</span><strong>{v}</strong></div>)}{onPause && <Button variant="system" size="icon" aria-label="Pause game" title="Pause (Esc)" onClick={onPause}><Pause /></Button>}</div>;
 }
 export function DPad({ onDir }: { onDir: (d: Dir) => void }) {
