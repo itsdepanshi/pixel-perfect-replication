@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { apps, type AppId } from "./registry";
 import { WindowManager, useWindowManager } from "./window-manager";
 import { AppWindow } from "./app-window";
+import { SECRET_EVENT } from "./terminal-commands";
+import { unlockSecretBonus } from "./arcade/progression";
+import { ARCADE_BONUS_EVENT } from "./arcade/arcade-app";
 
 export function DesktopShell() {
   return <WindowManager><Desktop /></WindowManager>;
@@ -19,7 +22,12 @@ function Desktop() {
     const boot = window.setTimeout(() => setBooting(false), window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 100 : 2100);
     return () => { window.clearInterval(clock); window.clearTimeout(boot); };
   }, []);
-  useEffect(() => { if (!booting) manager.open("terminal"); }, [booting]); // One initial window per completed boot.
+  useEffect(() => { if (!booting) manager.open("terminal"); }, [booting]);
+  useEffect(() => {
+    const onSecret = () => { unlockSecretBonus(); manager.open("games"); window.setTimeout(() => window.dispatchEvent(new Event(ARCADE_BONUS_EVENT)), 60); };
+    window.addEventListener(SECRET_EVENT, onSecret);
+    return () => window.removeEventListener(SECRET_EVENT, onSecret);
+  }, [manager.open]); // One initial window per completed boot.
   const clock = time?.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) ?? "--:--:--";
   return <main className="desktop-shell">
     <StatusBar time={time} clock={clock} />

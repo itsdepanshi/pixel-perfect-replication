@@ -1,3 +1,6 @@
+/** Hidden, harmless easter egg: opens the arcade bonus mode. Not listed in help. */
+export const SECRET_COMMAND = "arcade --overclock";
+export const SECRET_EVENT = "nexus:secret-command";
 export function executeCommand(command: string, now = new Date()): string[] {
   const cmd = command.trim().toLowerCase();
   if (!cmd || cmd === "clear") return [];
@@ -6,6 +9,7 @@ export function executeCommand(command: string, now = new Date()): string[] {
     case "date": return [now.toString()];
     case "whoami": return ["root", "Local NEXUS session · simulated identity"];
     case "neofetch": return ["   /\\   /\\     root@nexus", "  /  \\/  \\    ─────────────────────", "  \\  /\\  /    OS       NEXUS OS 1.0", "   \\/  \\/     Host     Browser sandbox", "              Shell    nexus-sh", "              Desktop  NEXUS / Phase 01", "              Memory   2.4 / 8 GB (simulated)"];
+    case SECRET_COMMAND: return ["> overclock handshake accepted", "> injecting bonus cartridge into NEXUS ARCADE...", "Secret unlocked. Have fun, operator."];
     default: return [`nexus-sh: command not found: ${command.trim()}`, "Type 'help' for available commands."];
   }
 }

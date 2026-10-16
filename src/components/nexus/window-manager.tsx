@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type Context as ReactContext, type ReactNode } from "react";
 import type { AppId } from "./registry";
 
 export type WindowState = { id: AppId; x: number; y: number; width: number; height: number; minimized: boolean; maximized: boolean; z: number };
@@ -9,7 +9,9 @@ const fit = (w: WindowState, b: Bounds): WindowState => {
   return { ...w, width, height, x: Math.max(12, Math.min(w.x, b.width - width - 12)), y: Math.max(12, Math.min(w.y, b.height - height - 12)) };
 };
 type Manager = { windows: WindowState[]; active: AppId | null; open: (id: AppId) => void; focus: (id: AppId) => void; close: (id: AppId) => void; minimize: (id: AppId) => void; maximize: (id: AppId) => void; move: (id: AppId, x: number, y: number) => void; bounds: Bounds };
-const Context = createContext<Manager | null>(null);
+// Keep one context identity across hot reloads so provider and consumers always match.
+const globalStore = globalThis as typeof globalThis & { __nexusWindowContext?: ReactContext<Manager | null> };
+const Context = (globalStore.__nexusWindowContext ??= createContext<Manager | null>(null));
 export function WindowManager({ children }: { children: ReactNode }) {
   const [bounds, setBounds] = useState<Bounds>({ width: 1280, height: 780 });
   const [windows, setWindows] = useState<WindowState[]>([]);
@@ -29,7 +31,7 @@ export function WindowManager({ children }: { children: ReactNode }) {
     windows, active, bounds,
     open: id => setWindows(prev => {
       if (prev.some(w => w.id === id)) return prev.map(w => w.id === id ? { ...w, minimized: false, z: top(prev) } : w);
-      return [...prev, fit({ id, x: bounds.width < 700 ? 12 : bounds.width * 0.29 + prev.length * 24, y: bounds.width < 700 ? 148 : Math.min(170, bounds.height * 0.21) + prev.length * 24, width: 720, height: 440, minimized: false, maximized: false, z: top(prev) }, bounds)];
+      return [...prev, fit({ id, x: bounds.width < 700 ? 12 : bounds.width * 0.29 + prev.length * 24, y: bounds.width < 700 ? 148 : Math.min(170, bounds.height * 0.21) + prev.length * 24, width: id === "games" ? 900 : 720, height: id === "games" ? 640 : 440, minimized: false, maximized: false, z: top(prev) }, bounds)];
     }),
     focus: id => change(id, (w, list) => ({ ...w, z: top(list) })),
     close: id => setWindows(prev => prev.filter(w => w.id !== id)),

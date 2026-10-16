@@ -17,3 +17,7 @@
 - Store audio blobs and metadata, recreating and revoking object URLs at runtime, because temporary URLs are not durable file references.
 - Debounce note saves by immutable note ID and revision with a module-level pending queue flushed on app closure, because edits must never leak between notes or disappear on closing a window.
 - Inline positioning styles are limited to state-driven window geometry; all visual design values belong to semantic global CSS tokens.
+- Keep each arcade game's rules in a pure `src/components/nexus/arcade/*-logic.ts` module with unit tests, and React game components only for rendering, timers and input, because mechanics must stay testable and isolated.
+- Route all arcade scores, XP, achievements and cosmetics through the single `arcade/progression.ts` store in localStorage, because small single-player records need no database and every game must share one profile.
+- Games capture keys at window capture phase only while running in the active, unminimized window and pause on minimize or hidden tab, so gameplay never leaks input to other apps.
+- Maze levels are validated with a state-space search (position, switch, key) before use, so every generated level is solvable.

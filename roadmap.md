@@ -9,3 +9,8 @@
 - [ ] Implement note creation, editing, autosave, manual save, search and confirmed deletion.
 - [ ] Implement media imports, playlist, real playback and player controls.
 - [ ] Verify refresh/window persistence, errors and narrow layouts.
+## NEXUS Arcade
+- [x] Shared progression (XP, ranks, achievements, cosmetics) with localStorage.
+- [x] VIRUS RUN, BREACH PROTOCOL and ZERO DAY playable with pause/restart/summary.
+- [x] Secrets: terminal bonus command, hidden achievement and theme.
+- [x] Logic tests and browser play-through.
