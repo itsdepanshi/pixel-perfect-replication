@@ -29,7 +29,7 @@ export function WindowManager({ children }: { children: ReactNode }) {
     windows, active, bounds,
     open: id => setWindows(prev => {
       if (prev.some(w => w.id === id)) return prev.map(w => w.id === id ? { ...w, minimized: false, z: top(prev) } : w);
-      return [...prev, fit({ id, x: bounds.width < 700 ? 12 : bounds.width * 0.29 + prev.length * 24, y: bounds.width < 700 ? 148 : Math.min(170, bounds.height * 0.21) + prev.length * 24, width: 720, height: 440, minimized: false, maximized: false, z: top(prev) }, bounds)];
+      return [...prev, fit({ id, x: bounds.width < 700 ? 12 : bounds.width * 0.29 + prev.length * 24, y: bounds.width < 700 ? 148 : Math.min(170, bounds.height * 0.21) + prev.length * 24, width: id === "games" ? 900 : 720, height: id === "games" ? 640 : 440, minimized: false, maximized: false, z: top(prev) }, bounds)];
     }),
     focus: id => change(id, (w, list) => ({ ...w, z: top(list) })),
     close: id => setWindows(prev => prev.filter(w => w.id !== id)),
