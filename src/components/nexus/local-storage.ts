@@ -1,12 +1,13 @@
 export type Note = { id: string; title: string; body: string; modified: number };
 export type Track = { id: string; name: string; blob: Blob; duration: number | null; added: number };
-type Store = "notes" | "tracks";
+export type DrawingProject = { id: string; name: string; width: number; height: number; background: string | null; modified: number; layers: { id: string; name: string; visible: boolean; opacity: number; blob: Blob }[]; swatches: string[] };
+type Store = "notes" | "tracks" | "drawings";
 let database: Promise<IDBDatabase> | undefined;
 function openDatabase() {
   if (!database) database = new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open("nexus-local-library", 1);
+    const request = indexedDB.open("nexus-local-library", 2);
     request.onupgradeneeded = () => {
-      for (const name of ["notes", "tracks"]) if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: "id" });
+      for (const name of ["notes", "tracks", "drawings"]) if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: "id" });
     };
     request.onsuccess = () => { request.result.onversionchange = () => { request.result.close(); database = undefined; }; resolve(request.result); };
     request.onerror = () => { database = undefined; reject(request.error); };
@@ -24,7 +25,7 @@ export async function readAll<T>(store: Store): Promise<T[]> {
     request.onerror = () => reject(request.error);
   });
 }
-export async function writeRecord(store: Store, value: Note | Track) {
+export async function writeRecord(store: Store, value: Note | Track | DrawingProject) {
   const db = await openDatabase();
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(store, "readwrite");
