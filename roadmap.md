@@ -1,4 +1,10 @@
 # NEXUS OS Phase 1
+## PIXEL//FORGE
+- [x] Implement drawing engine, tools, coordinates and real undo/redo.
+- [x] Add editable layers, project persistence, image import/export and discard protection.
+- [x] Integrate studio, advanced controls, isolated shortcuts and smaller-screen layout.
+- [x] Test drawing, layers, saving/reopening, exports, imports and zoom/resizing.
+
 - [x] Build desktop shell, boot sequence, shortcuts, clocks and simulated status.
 - [x] Implement centralized reusable window controls and taskbar state.
 - [x] Add safe terminal commands and five lightweight application previews.
