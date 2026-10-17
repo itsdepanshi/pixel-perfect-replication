@@ -21,3 +21,6 @@
 - Route all arcade scores, XP, achievements and cosmetics through the single `arcade/progression.ts` store in localStorage, because small single-player records need no database and every game must share one profile.
 - Games capture keys at window capture phase only while running in the active, unminimized window and pause on minimize or hidden tab, so gameplay never leaks input to other apps.
 - Maze levels are validated with a state-space search (position, switch, key) before use, so every generated level is solvable.
+- Keep PIXEL//FORGE rendering, layer canvases and bounded snapshot history in its browser-only engine, with pure geometry helpers tested separately, so drawing stays independent of desktop layout and screen density.
+- Persist editable drawing projects as per-layer PNG blobs through the shared IndexedDB library; export composited images separately, because image exports cannot preserve layer editing.
+- Register discard protection through WindowManager close guards and isolate studio shortcuts to the active window, because drawing must not override other desktop applications.
