@@ -32,7 +32,7 @@ export function ForgeApp({ active }: { active: boolean }) {
       const e = new ForgeEngine(c, redraw, pick); engine.current = e; setSavedRevision(e.revision);
       let first = true; const observer = new ResizeObserver(entries => { const rect = entries[0]?.contentRect; if (!rect) return; e.sizeDisplay(rect.width, rect.height); if (first && rect.width > 10) { e.fit(); first = false; } redraw(); }); observer.observe(container);
       return () => { observer.disconnect(); e.cancel(); engine.current = null; };
-    } catch (err) { setError(err instanceof Error ? err.message : "Could not start drawing."); }
+    } catch (err) { setError(err instanceof Error ? err.message : "Could not start drawing."); return undefined; }
   }, []);
   useEffect(() => manager.registerClose("forge", () => !dirtyRef.current || window.confirm("Discard unsaved drawing and close PIXEL//FORGE?")), [manager.registerClose]);
   useEffect(() => { const unload = (event: BeforeUnloadEvent) => { if (dirtyRef.current) { event.preventDefault(); event.returnValue = ""; } }; window.addEventListener("beforeunload", unload); return () => window.removeEventListener("beforeunload", unload); }, []);
