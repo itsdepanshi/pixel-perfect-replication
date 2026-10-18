@@ -1,8 +1,8 @@
 # NEXUS OS Phase 1
 ## PIXEL//FORGE filesystem integration
-- [ ] Connect project saves and image exports to the shared IndexedDB filesystem projection.
-- [ ] Connect Files open/rename/delete/move and terminal ls/cd/cat.
-- [ ] Verify draw/save/open/edit/save/refresh/reopen and no duplicate records.
+- [x] Connect project saves and image exports to the shared IndexedDB filesystem projection.
+- [x] Connect Files open/rename/delete/move and terminal ls/cd/cat.
+- [x] Verify draw/save/open/edit/save/refresh/reopen and no duplicate records.
 
 ## PIXEL//FORGE
 - [x] Implement drawing engine, tools, coordinates and real undo/redo.

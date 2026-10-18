@@ -1,10 +1,12 @@
 import "fake-indexeddb/auto";
-import { Blob } from "node:buffer";
+import { Blob as NodeBlob } from "node:buffer";
 import { describe, it, expect } from "vitest";
 import { readAll, subscribeLibrary, writeRecord, type DrawingProject, type StoredImage } from "./local-storage";
 import { FORGE_FOLDER, PICTURES, saveDrawing, readFilesystem, projectFile, renameFile, moveFile, deleteFile, saveImage, filesystemCommand } from "./virtual-filesystem";
 
-function project(id: string): DrawingProject { return { id, name: id, width: 640, height: 480, background: null, modified: 1, swatches: ["#a3ff12"], layers: [{ id: "layer-1", name: "Hidden layer", visible: false, opacity: .35, blob: new Blob(["pixels"], { type: "image/png" }) }] }; }
+// Node's structured-cloneable Blob models browser IndexedDB; jsdom's Blob cannot be cloned.
+function storedBlob(text: string): Blob { return new NodeBlob([text], { type: "image/png" }) as unknown as Blob; }
+function project(id: string): DrawingProject { return { id, name: id, width: 640, height: 480, background: null, modified: 1, swatches: ["#a3ff12"], layers: [{ id: "layer-1", name: "Hidden layer", visible: false, opacity: .35, blob: storedBlob("pixels") }] }; }
 describe("Shared virtual artwork files", () => {
   it("saves native projects in the required folder preserving all editable data and notifies immediately", async () => {
     let changes = 0; const off = subscribeLibrary(() => changes++); const p = project("native"); await saveDrawing(p, false); off();
@@ -27,7 +29,7 @@ describe("Shared virtual artwork files", () => {
     const p = project("delete"); await saveDrawing(p, false); await deleteFile(projectFile(p)); await expect(saveDrawing(p, true)).rejects.toThrow("deleted"); expect((await readFilesystem()).some(f => f.id === p.id)).toBe(false);
   });
   it("repeated PNG exports overwrite the same Pictures image", async () => {
-    const image: StoredImage = { id: "export-1", name: "drawing.png", folder: PICTURES, width: 640, height: 480, modified: 1, blob: new Blob(["png"]) }; await saveImage(image); await saveImage({ ...image, id: "export-2", width: 800 });
+    const image: StoredImage = { id: "export-1", name: "drawing.png", folder: PICTURES, width: 640, height: 480, modified: 1, blob: storedBlob("png") }; await saveImage(image); await saveImage({ ...image, id: "export-2", width: 800 });
     const rows = (await readAll<StoredImage>("images")).filter(f => f.name === image.name); expect(rows).toHaveLength(1); expect(rows[0]?.width).toBe(800); expect(rows[0]?.folder).toBe("/home/root/Pictures");
   });
   it("ls, cd and cat use the same project paths and expose metadata rather than binary contents", () => {
