@@ -340,3 +340,17 @@
 @container (max-width: 520px) { .forge-workspace { grid-template-columns: 38px minmax(0, 1fr); grid-template-rows: minmax(170px, 1fr) 150px; }.forge-tools { grid-row: 1 / 3; padding: 3px 0; }.forge-tools button { width: 32px; height: 30px; }.forge-inspector { grid-column: 2; grid-row: 2; border-left: none; border-top: 1px solid var(--border); display: flex; overflow: auto; }.forge-inspector section { flex: 0 0 165px; border-right: 1px solid var(--border); border-bottom: none; }.forge-inspector h3 { margin-bottom: 8px; }.forge-brand strong { font-size: 11px; }.forge-brand { gap: 5px; }.forge-brand > svg { width: 13px; }.forge-top { padding: 5px 7px; gap: 6px; }.forge-document { flex: 1; min-width: 60px; font-size: 7px; }.forge-document > span:nth-child(2) { max-width: 110px; }.forge-file-actions { margin-left: auto; }.forge-options { gap: 5px; padding: 4px; }.forge-tool-name { width: 47px; font-size: 7px; }.forge-options label { gap: 3px; font-size: 6px; }.forge-options input[type=range] { width: 46px; }.forge-options output { width: 29px; font-size: 7px; }.forge-options button { width: 24px; height: 24px; }.forge-option-spacer { display: none; }.forge-stage-code { font-size: 6px; }.forge-status { gap: 7px; font-size: 6px; }.forge-status > span:last-child { display: none; }.forge-help > div { font-size: 8px; }.forge-layer-list { max-height: 80px; }.forge-inspector .forge-layers { flex-basis: 185px; }.forge-swatches { grid-template-columns: repeat(8, minmax(0, 1fr)); }.forge-swatches button { height: 18px; } }
 @media (max-width: 600px) { .desktop-shortcuts { grid-template-columns: repeat(7, minmax(0, 1fr)); }.desktop-icon:last-child .shortcut-name { font-size: 7px; }.taskbar-app { width: 30px; }.taskbar-left > .taskbar-separator { display: none; }.taskbar-clock { width: 43px; }.taskbar-left { gap: 3px; } }
 @container (max-width: 520px) { .forge-inspector { overflow-x: auto; overflow-y: hidden; }.forge-inspector section { height: 100%; overflow-y: auto; } }
+
+/* File Explorer extends the existing compact preview list. */
+.files-app { height: 100%; overflow: auto; }
+.files-toolbar { display: flex; align-items: center; gap: 6px; margin-top: 18px; min-width: 0; }
+.files-toolbar > span { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 10px; color: var(--muted-foreground); }
+.files-list { margin-top: 10px; }
+.files-list > div { align-items: center; gap: 10px; padding: 5px 0; }
+.files-list > div[data-selected=true] { background: var(--secondary); }
+.files-list .files-entry { flex: 1; min-width: 0; justify-content: flex-start; height: auto; padding: 8px 0; }
+.files-entry pre { overflow-wrap: anywhere; text-align: left; }
+.files-list small { font-size: 8px; color: var(--muted-foreground); flex-shrink: 0; }
+.files-metadata { font: 9px var(--font-system); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted-foreground); line-height: 1.8; }
+.forge-dialog > .forge-check { flex-direction: row; align-items: center; }
+.forge-dialog > .forge-check input[type=checkbox] { width: auto; }
