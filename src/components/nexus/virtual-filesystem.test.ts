@@ -1,4 +1,5 @@
 import "fake-indexeddb/auto";
+import { Blob } from "node:buffer";
 import { describe, it, expect } from "vitest";
 import { readAll, subscribeLibrary, writeRecord, type DrawingProject, type StoredImage } from "./local-storage";
 import { FORGE_FOLDER, PICTURES, saveDrawing, readFilesystem, projectFile, renameFile, moveFile, deleteFile, saveImage, filesystemCommand } from "./virtual-filesystem";
