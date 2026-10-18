@@ -30,7 +30,7 @@ export async function readAll<T>(store: Store): Promise<T[]> {
     request.onerror = () => reject(request.error);
   });
 }
-export async function writeRecord(store: Store, value: Note | Track | DrawingProject | StoredImage) {
+export async function writeRecord(store: Store, value: Note | Track | DrawingProject | StoredImage | TrashedItem) {
   const db = await openDatabase();
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(store, "readwrite");
