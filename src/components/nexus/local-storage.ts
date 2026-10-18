@@ -1,13 +1,17 @@
 export type Note = { id: string; title: string; body: string; modified: number };
 export type Track = { id: string; name: string; blob: Blob; duration: number | null; added: number };
-export type DrawingProject = { id: string; name: string; width: number; height: number; background: string | null; modified: number; layers: { id: string; name: string; visible: boolean; opacity: number; blob: Blob }[]; swatches: string[] };
-type Store = "notes" | "tracks" | "drawings";
+export type DrawingProject = { id: string; name: string; folder?: string; width: number; height: number; background: string | null; modified: number; layers: { id: string; name: string; visible: boolean; opacity: number; blob: Blob }[]; swatches: string[] };
+export type StoredImage = { id: string; name: string; folder: string; blob: Blob; width: number; height: number; modified: number };
+type Store = "notes" | "tracks" | "drawings" | "images";
+const listeners = new Set<() => void>();
+export function subscribeLibrary(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
+function notifyLibrary() { for (const listener of listeners) listener(); }
 let database: Promise<IDBDatabase> | undefined;
 function openDatabase() {
   if (!database) database = new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open("nexus-local-library", 2);
+    const request = indexedDB.open("nexus-local-library", 3);
     request.onupgradeneeded = () => {
-      for (const name of ["notes", "tracks", "drawings"]) if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: "id" });
+      for (const name of ["notes", "tracks", "drawings", "images"]) if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: "id" });
     };
     request.onsuccess = () => { request.result.onversionchange = () => { request.result.close(); database = undefined; }; resolve(request.result); };
     request.onerror = () => { database = undefined; reject(request.error); };
@@ -25,12 +29,12 @@ export async function readAll<T>(store: Store): Promise<T[]> {
     request.onerror = () => reject(request.error);
   });
 }
-export async function writeRecord(store: Store, value: Note | Track | DrawingProject) {
+export async function writeRecord(store: Store, value: Note | Track | DrawingProject | StoredImage) {
   const db = await openDatabase();
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(store, "readwrite");
     tx.objectStore(store).put(value);
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => { notifyLibrary(); resolve(); };
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
   });
@@ -40,9 +44,19 @@ export async function deleteRecord(store: Store, id: string) {
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(store, "readwrite");
     tx.objectStore(store).delete(id);
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => { notifyLibrary(); resolve(); };
     tx.onabort = () => reject(tx.error);
     tx.onerror = () => reject(tx.error);
+  });
+}
+/** Atomic read-modify-write keeps Explorer moves/renames from racing artwork saves. */
+export async function updateLibraryRecord<T extends DrawingProject | StoredImage>(store: "drawings" | "images", id: string, update: (existing: T | undefined) => T) {
+  const db = await openDatabase();
+  return new Promise<T>((resolve, reject) => {
+    const tx = db.transaction(store, "readwrite"); const objects = tx.objectStore(store); const request = objects.get(id); let result: T;
+    request.onsuccess = () => { try { result = update(request.result as T | undefined); objects.put(result); } catch (error) { reject(error); tx.abort(); } };
+    tx.oncomplete = () => { notifyLibrary(); resolve(result); };
+    tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error ?? new Error("File update cancelled."));
   });
 }
 const pending = new Map<string, { note: Note; timer: ReturnType<typeof setTimeout>; done: (ok: boolean) => void }>();

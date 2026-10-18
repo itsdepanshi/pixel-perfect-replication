@@ -23,4 +23,6 @@
 - Maze levels are validated with a state-space search (position, switch, key) before use, so every generated level is solvable.
 - Keep PIXEL//FORGE rendering, layer canvases and bounded snapshot history in its browser-only engine, with pure geometry helpers tested separately, so drawing stays independent of desktop layout and screen density.
 - Persist editable drawing projects as per-layer PNG blobs through the shared IndexedDB library; export composited images separately, because image exports cannot preserve layer editing.
+- Project virtual files are projections of the existing drawings records, with folder metadata and stable IDs; image exports use the same IndexedDB library, because duplicating artwork into file records causes stale data. Files, Forge and the allowlisted terminal share virtual-filesystem helpers and commit notifications.
+- Route file-open requests through WindowManager as identified requests, because new and already-running Forge windows must load projects with their existing discard protection.
 - Register discard protection through WindowManager close guards and isolate studio shortcuts to the active window, because drawing must not override other desktop applications.
