@@ -17,7 +17,7 @@ function readLayout(): Record<string, IconCell> {
   const base = defaultLayout();
   try {
     const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? "{}") as Record<string, IconCell>;
-    for (const app of apps) if (saved[app.id] && Number.isFinite(saved[app.id].col) && Number.isFinite(saved[app.id].row)) base[app.id] = saved[app.id];
+    for (const app of apps) { const cell = saved[app.id]; if (cell && Number.isFinite(cell.col) && Number.isFinite(cell.row)) base[app.id] = cell; }
   } catch { /* ignore corrupt layout */ }
   return base;
 }
@@ -59,7 +59,7 @@ function Desktop() {
   }, []);
   const saveLayout = (next: Record<string, IconCell>) => { setLayout(next); try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(next)); } catch { /* private mode */ } };
   const takenCells = (except?: AppId) => new Set(apps.filter(a => a.id !== except).map(a => { const c = layout[a.id] ?? { col: 0, row: 0 }; return `${c.col},${c.row}`; }));
-  const alignToGrid = () => { const next = { ...layout }; const taken = new Set<string>(); for (const app of apps) { const cell = freeCell(cellFor(GRID.x + next[app.id].col * GRID.w, GRID.y + next[app.id].row * GRID.h, manager.bounds), taken, manager.bounds); next[app.id] = cell; taken.add(`${cell.col},${cell.row}`); } saveLayout(next); };
+  const alignToGrid = () => { const next = { ...layout }; const taken = new Set<string>(); for (const app of apps) { const current = next[app.id] ?? { col: 0, row: 0 }; const cell = freeCell(cellFor(GRID.x + current.col * GRID.w, GRID.y + current.row * GRID.h, manager.bounds), taken, manager.bounds); next[app.id] = cell; taken.add(`${cell.col},${cell.row}`); } saveLayout(next); };
   const autoArrange = () => { const next = { ...layout }; const perColumn = Math.max(1, Math.floor((manager.bounds.height - GRID.y) / GRID.h)); apps.forEach((app, i) => { next[app.id] = { col: Math.floor(i / perColumn), row: i % perColumn }; }); saveLayout(next); };
   const resetLayout = () => { saveLayout(defaultLayout()); };
   useEffect(() => {
