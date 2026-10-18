@@ -2,16 +2,17 @@ export type Note = { id: string; title: string; body: string; modified: number }
 export type Track = { id: string; name: string; blob: Blob; duration: number | null; added: number };
 export type DrawingProject = { id: string; name: string; folder?: string; width: number; height: number; background: string | null; modified: number; layers: { id: string; name: string; visible: boolean; opacity: number; blob: Blob }[]; swatches: string[] };
 export type StoredImage = { id: string; name: string; folder: string; blob: Blob; width: number; height: number; modified: number };
-type Store = "notes" | "tracks" | "drawings" | "images";
+export type TrashedItem = { id: string; name: string; kind: "project" | "image"; originalFolder: string; deletedAt: number; size: number; width: number; height: number; payload: DrawingProject | StoredImage };
+type Store = "notes" | "tracks" | "drawings" | "images" | "trash";
 const listeners = new Set<() => void>();
 export function subscribeLibrary(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
 function notifyLibrary() { for (const listener of listeners) listener(); }
 let database: Promise<IDBDatabase> | undefined;
 function openDatabase() {
   if (!database) database = new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open("nexus-local-library", 3);
+    const request = indexedDB.open("nexus-local-library", 4);
     request.onupgradeneeded = () => {
-      for (const name of ["notes", "tracks", "drawings", "images"]) if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: "id" });
+      for (const name of ["notes", "tracks", "drawings", "images", "trash"]) if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: "id" });
     };
     request.onsuccess = () => { request.result.onversionchange = () => { request.result.close(); database = undefined; }; resolve(request.result); };
     request.onerror = () => { database = undefined; reject(request.error); };
