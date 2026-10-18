@@ -1,8 +1,9 @@
-import { readAll, deleteRecord, updateLibraryRecord, subscribeLibrary, type DrawingProject, type StoredImage } from "./local-storage";
+import { readAll, writeRecord, deleteRecord, updateLibraryRecord, subscribeLibrary, type DrawingProject, type StoredImage, type TrashedItem } from "./local-storage";
 
 export const PICTURES = "/home/root/Pictures";
 export const FORGE_FOLDER = `${PICTURES}/Pixel Forge`;
-export const directories = ["/", "/home", "/home/root", "/documents", "/downloads", "/system", PICTURES, FORGE_FOLDER];
+export const TRASH = "/system/Trash";
+export const directories = ["/", "/home", "/home/root", "/documents", "/downloads", "/system", TRASH, PICTURES, FORGE_FOLDER];
 export type VirtualFile = { id: string; name: string; folder: string; kind: "project" | "image"; size: number; width: number; height: number; modified: number; layers?: number; project?: DrawingProject; image?: StoredImage };
 export const subscribeFilesystem = subscribeLibrary;
 export function resolvePath(path: string, cwd = "/home/root") {
@@ -38,7 +39,42 @@ export async function moveFile(file: VirtualFile, folder: string) {
   if (file.kind === "project") return updateLibraryRecord<DrawingProject>("drawings", file.id, p => { if (!p) throw new Error("File no longer exists."); return { ...p, folder, modified: Date.now() }; });
   return updateLibraryRecord<StoredImage>("images", file.id, p => { if (!p) throw new Error("File no longer exists."); return { ...p, folder, modified: Date.now() }; });
 }
-export function deleteFile(file: VirtualFile) { return deleteRecord(file.kind === "project" ? "drawings" : "images", file.id); }
+/** Deletion moves the record into the Recycle Bin; permanent deletion happens only from the bin. */
+export async function deleteFile(file: VirtualFile) {
+  const payload = file.kind === "project" ? file.project : file.image;
+  if (!payload) throw new Error("File data is not available.");
+  const item: TrashedItem = { id: file.id, name: file.name, kind: file.kind, originalFolder: file.folder, deletedAt: Date.now(), size: file.size, width: file.width, height: file.height, payload };
+  await writeRecord("trash", item);
+  await deleteRecord(file.kind === "project" ? "drawings" : "images", file.id);
+}
+export function readTrash() { return readAll<TrashedItem>("trash"); }
+/** Restore returns the file to its original folder, renaming on conflict so no existing file is overwritten. */
+export async function restoreFile(item: TrashedItem) {
+  const files = await readFilesystem();
+  const taken = new Set(files.filter(f => f.folder === item.originalFolder).map(f => f.name.toLowerCase()));
+  let name = item.name;
+  if (taken.has(name.toLowerCase())) {
+    const dot = name.lastIndexOf(".");
+    const base = dot > 0 ? name.slice(0, dot) : name;
+    const ext = dot > 0 ? name.slice(dot) : "";
+    let n = 2;
+    while (taken.has(`${base} (${n})${ext}`.toLowerCase())) n++;
+    name = `${base} (${n})${ext}`;
+  }
+  if (item.kind === "project") {
+    const p = item.payload as DrawingProject;
+    await writeRecord("drawings", { ...p, name: name.replace(/\.nexus$/i, ""), folder: item.originalFolder, modified: Date.now() });
+  } else {
+    const img = item.payload as StoredImage;
+    await writeRecord("images", { ...img, name, folder: item.originalFolder, modified: Date.now() });
+  }
+  await deleteRecord("trash", item.id);
+}
+export function deletePermanently(item: TrashedItem) { return deleteRecord("trash", item.id); }
+export async function emptyTrash() {
+  const items = await readTrash();
+  for (const item of items) await deleteRecord("trash", item.id);
+}
 export async function saveImage(image: StoredImage) {
   const existing = (await readAll<StoredImage>("images")).find(p => p.folder === image.folder && p.name === image.name);
   return updateLibraryRecord<StoredImage>("images", existing?.id ?? image.id, () => ({ ...image, id: existing?.id ?? image.id }));
