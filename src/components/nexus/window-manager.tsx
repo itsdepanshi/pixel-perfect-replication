@@ -8,13 +8,14 @@ const fit = (w: WindowState, b: Bounds): WindowState => {
   const height = Math.min(w.height, Math.max(220, b.height - 24));
   return { ...w, width, height, x: Math.max(12, Math.min(w.x, b.width - width - 12)), y: Math.max(12, Math.min(w.y, b.height - height - 12)) };
 };
-type Manager = { windows: WindowState[]; active: AppId | null; open: (id: AppId) => void; focus: (id: AppId) => void; close: (id: AppId) => void; minimize: (id: AppId) => void; maximize: (id: AppId) => void; move: (id: AppId, x: number, y: number) => void; bounds: Bounds; registerClose: (id: AppId, guard: () => boolean) => () => void };
+type Manager = { windows: WindowState[]; active: AppId | null; open: (id: AppId) => void; projectRequest: { id: string; token: number } | null; openProject: (id: string) => void; focus: (id: AppId) => void; close: (id: AppId) => void; minimize: (id: AppId) => void; maximize: (id: AppId) => void; move: (id: AppId, x: number, y: number) => void; bounds: Bounds; registerClose: (id: AppId, guard: () => boolean) => () => void };
 // Keep one context identity across hot reloads so provider and consumers always match.
 const globalStore = globalThis as typeof globalThis & { __nexusWindowContext?: ReactContext<Manager | null> };
 const Context = (globalStore.__nexusWindowContext ??= createContext<Manager | null>(null));
 export function WindowManager({ children }: { children: ReactNode }) {
   const [bounds, setBounds] = useState<Bounds>({ width: 1280, height: 780 });
   const [windows, setWindows] = useState<WindowState[]>([]);
+  const [projectRequest, setProjectRequest] = useState<Manager["projectRequest"]>(null);
   const closeGuards = useRef(new Map<AppId, () => boolean>());
   const registerClose = useCallback((id: AppId, guard: () => boolean) => { closeGuards.current.set(id, guard); return () => { closeGuards.current.delete(id); }; }, []);
   useEffect(() => {
@@ -30,13 +31,14 @@ export function WindowManager({ children }: { children: ReactNode }) {
   const active = windows.filter(w => !w.minimized).sort((a, b) => b.z - a.z)[0]?.id ?? null;
   const change = (id: AppId, fn: (w: WindowState, list: WindowState[]) => WindowState) => setWindows(prev => prev.map(w => w.id === id ? fn(w, prev) : w));
   const manager: Manager = {
-    windows, active, bounds, registerClose,
+    windows, active, bounds, registerClose, projectRequest,
+    openProject: id => { manager.open("forge"); setProjectRequest(previous => ({ id, token: (previous?.token ?? 0) + 1 })); },
     open: id => setWindows(prev => {
       if (prev.some(w => w.id === id)) return prev.map(w => w.id === id ? { ...w, minimized: false, z: top(prev) } : w);
       return [...prev, fit({ id, x: bounds.width < 700 ? 12 : id === "forge" ? 155 : bounds.width * 0.29 + prev.length * 24, y: bounds.width < 700 ? 148 : id === "forge" ? 28 : Math.min(170, bounds.height * 0.21) + prev.length * 24, width: id === "forge" ? 1050 : id === "games" ? 900 : 720, height: id === "forge" ? 760 : id === "games" ? 640 : 440, minimized: false, maximized: false, z: top(prev) }, bounds)];
     }),
     focus: id => change(id, (w, list) => ({ ...w, z: top(list) })),
-    close: id => { if (closeGuards.current.get(id)?.() === false) return; setWindows(prev => prev.filter(w => w.id !== id)); },
+    close: id => { if (closeGuards.current.get(id)?.() === false) return; if (id === "forge") setProjectRequest(null); setWindows(prev => prev.filter(w => w.id !== id)); },
     minimize: id => change(id, w => ({ ...w, minimized: true })),
     maximize: id => change(id, (w, list) => ({ ...w, maximized: !w.maximized, z: top(list) })),
     move: (id, x, y) => change(id, w => fit({ ...w, x, y }, bounds)),
