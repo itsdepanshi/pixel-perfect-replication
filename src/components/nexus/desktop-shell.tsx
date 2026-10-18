@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Activity, ArrowUpRight, ChevronRight, Command, Cpu, HardDrive, Hexagon, ShieldCheck, Wifi, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Activity, ArrowUpRight, ChevronRight, Command, Cpu, HardDrive, Hexagon, LayoutGrid, ShieldCheck, Wifi, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apps, type AppId } from "./registry";
 import { WindowManager, useWindowManager } from "./window-manager";
@@ -7,6 +7,35 @@ import { AppWindow } from "./app-window";
 import { SECRET_EVENT } from "./terminal-commands";
 import { unlockSecretBonus } from "./arcade/progression";
 import { ARCADE_BONUS_EVENT } from "./arcade/arcade-app";
+import { CURSOR_EVENT, readCursorPreference } from "./settings-app";
+
+type IconCell = { col: number; row: number };
+const GRID = { x: 22, y: 30, w: 96, h: 104 };
+const LAYOUT_KEY = "nexus-icon-layout";
+function defaultLayout(): Record<string, IconCell> { return Object.fromEntries(apps.map((app, i) => [app.id, { col: 0, row: i }])); }
+function readLayout(): Record<string, IconCell> {
+  const base = defaultLayout();
+  try {
+    const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? "{}") as Record<string, IconCell>;
+    for (const app of apps) if (saved[app.id] && Number.isFinite(saved[app.id].col) && Number.isFinite(saved[app.id].row)) base[app.id] = saved[app.id];
+  } catch { /* ignore corrupt layout */ }
+  return base;
+}
+function cellFor(x: number, y: number, bounds: { width: number; height: number }): IconCell {
+  const maxCol = Math.max(0, Math.floor((bounds.width - GRID.x - 82) / GRID.w));
+  const maxRow = Math.max(0, Math.floor((bounds.height - GRID.y - 83) / GRID.h));
+  return { col: Math.max(0, Math.min(maxCol, Math.round((x - GRID.x) / GRID.w))), row: Math.max(0, Math.min(maxRow, Math.round((y - GRID.y) / GRID.h))) };
+}
+/** Nearest free cell to the target, so icons never overlap. */
+function freeCell(target: IconCell, taken: Set<string>, bounds: { width: number; height: number }): IconCell {
+  if (!taken.has(`${target.col},${target.row}`)) return target;
+  for (let radius = 1; radius < 12; radius++) for (let dc = -radius; dc <= radius; dc++) for (let dr = -radius; dr <= radius; dr++) {
+    if (Math.max(Math.abs(dc), Math.abs(dr)) !== radius) continue;
+    const cell = cellFor(GRID.x + (target.col + dc) * GRID.w, GRID.y + (target.row + dr) * GRID.h, bounds);
+    if (!taken.has(`${cell.col},${cell.row}`)) return cell;
+  }
+  return target;
+}
 
 export function DesktopShell() {
   return <WindowManager><Desktop /></WindowManager>;
