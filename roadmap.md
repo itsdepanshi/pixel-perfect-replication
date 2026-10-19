@@ -16,10 +16,10 @@
 - [x] Verify interactions and desktop/mobile layouts.
 
 ## Notes and Media
-- [ ] Add local durable storage for notes and audio blobs.
-- [ ] Implement note creation, editing, autosave, manual save, search and confirmed deletion.
-- [ ] Implement media imports, playlist, real playback and player controls.
-- [ ] Verify refresh/window persistence, errors and narrow layouts.
+- [x] Add local durable storage for notes and audio blobs.
+- [x] Implement note creation, editing, autosave, manual save, search and confirmed deletion.
+- [x] Implement media imports, playlist, real playback and player controls.
+- [x] Verify refresh/window persistence, errors and narrow layouts.
 ## NEXUS Arcade
 - [x] Shared progression (XP, ranks, achievements, cosmetics) with localStorage.
 - [x] VIRUS RUN, BREACH PROTOCOL and ZERO DAY playable with pause/restart/summary.
