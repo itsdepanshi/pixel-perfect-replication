@@ -354,3 +354,15 @@
 .files-metadata { font: 9px var(--font-system); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted-foreground); line-height: 1.8; }
 .forge-dialog > .forge-check { flex-direction: row; align-items: center; }
 .forge-dialog > .forge-check input[type=checkbox] { width: auto; }
+@media (min-width: 701px) {
+  .desktop-shortcuts { inset: 0; left: 0; top: 0; display: block; pointer-events: none; }
+  .desktop-shortcuts .desktop-icon { pointer-events: auto; }
+}
+@media (max-width: 700px) { .desktop-shortcuts .desktop-icon { position: static !important; } }
+.desktop-shortcuts.is-arranging .desktop-icon { outline: 1px dashed color-mix(in oklab, var(--primary) 45%, transparent); cursor: grab; touch-action: none; }
+.desktop-icon.is-dragging { z-index: 5; opacity: 0.85; cursor: grabbing; }
+.arrange-hint { margin-left: 8px; color: var(--primary); }
+.desktop-menu { position: absolute; z-index: 9000; display: flex; flex-direction: column; min-width: 180px; padding: 4px; background: var(--popover); border: 1px solid var(--border); box-shadow: 0 10px 30px color-mix(in oklab, var(--background) 70%, transparent); }
+.desktop-menu > button { justify-content: flex-start; }
+.desktop-shell.custom-cursor, .desktop-shell.custom-cursor * { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cpath d='M2 2l7 18 2.5-7.5L19 10z' fill='%23111' stroke='%23b8ff3c' stroke-width='1.5'/%3E%3C/svg%3E") 2 2, auto; }
+.desktop-shell.custom-cursor input, .desktop-shell.custom-cursor textarea { cursor: text; }
