@@ -98,12 +98,22 @@ function Desktop() {
 export function StatusBar({ time, clock }: { time: Date | null; clock: string }) {
   return <header className="status-bar"><div className="brand"><Hexagon size={19} /><span>NEXUS<span>://OS</span></span><span className="version-badge">1.0</span></div><div className="session-status"><span className="status-dot" /> SYSTEM ONLINE <span className="status-divider">/</span><span className="session-user">root@nexus</span></div><div className="top-right"><span className="local-status"><Wifi size={13} /> LOCAL SESSION</span><span className="top-date">{time?.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase() ?? "—"}</span><time>{clock}</time></div></header>;
 }
-export function DesktopIcon({ id }: { id: AppId }) {
+export function DesktopIcon({ id, cell, arrange, onDrop }: { id: AppId; cell: IconCell; arrange: boolean; onDrop: (id: AppId, x: number, y: number) => void }) {
   const manager = useWindowManager();
+  const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
+  const start = useRef<{ px: number; py: number; x: number; y: number; moved: boolean } | null>(null);
   const app = apps.find(a => a.id === id);
   if (!app) return null;
   const Icon = app.icon;
-  return <Button variant="shortcut" className="desktop-icon" aria-label={`Open ${app.name}`} onClick={() => manager.open(id)}><span className="shortcut-icon"><Icon /><span className="shortcut-number">{app.code}</span></span><span className="shortcut-name">{app.name}</span></Button>;
+  const x = GRID.x + cell.col * GRID.w, y = GRID.y + cell.row * GRID.h;
+  const pos = drag ?? { x, y };
+  return <Button variant="shortcut" className={`desktop-icon ${drag ? "is-dragging" : ""}`} style={{ position: "absolute", left: pos.x, top: pos.y }} aria-label={`Open ${app.name}`}
+    onPointerDown={event => { if (!arrange || event.button !== 0) return; event.currentTarget.setPointerCapture(event.pointerId); start.current = { px: event.clientX, py: event.clientY, x, y, moved: false }; }}
+    onPointerMove={event => { const s = start.current; if (!s) return; const dx = event.clientX - s.px, dy = event.clientY - s.py; if (!s.moved && Math.hypot(dx, dy) < 4) return; s.moved = true; setDrag({ x: s.x + dx, y: s.y + dy }); }}
+    onPointerUp={() => { const s = start.current; start.current = null; if (s?.moved && drag) onDrop(id, drag.x, drag.y); setDrag(null); }}
+    onPointerCancel={() => { start.current = null; setDrag(null); }}
+    onClick={() => { if (!arrange) manager.open(id); }}
+    onDoubleClick={() => { if (arrange) manager.open(id); }}><span className="shortcut-icon"><Icon /><span className="shortcut-number">{app.code}</span></span><span className="shortcut-name">{app.name}</span></Button>;
 }
 export function Taskbar({ clock, showStatus, toggleStatus }: { clock: string; showStatus: boolean; toggleStatus: () => void }) {
   const manager = useWindowManager();
