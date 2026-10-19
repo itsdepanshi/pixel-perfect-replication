@@ -12,7 +12,7 @@ import { CURSOR_EVENT, readCursorPreference } from "./settings-app";
 type IconCell = { col: number; row: number };
 const GRID = { x: 22, y: 30, w: 96, h: 104 };
 const LAYOUT_KEY = "nexus-icon-layout";
-function defaultLayout(): Record<string, IconCell> { return Object.fromEntries(apps.map((app, i) => [app.id, { col: 0, row: i }])); }
+function defaultLayout(): Record<string, IconCell> { return Object.fromEntries(apps.map((app, i) => [app.id, { col: Math.floor(i / 6), row: i % 6 }])); }
 function readLayout(): Record<string, IconCell> {
   const base = defaultLayout();
   try {
@@ -77,7 +77,7 @@ function Desktop() {
   const clock = time?.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) ?? "--:--:--";
   return <main className={`desktop-shell ${customCursor ? "custom-cursor" : ""}`}>
     <StatusBar time={time} clock={clock} />
-    <div className="desktop-workspace" ref={workspaceRef} onContextMenu={event => { if ((event.target as HTMLElement).closest(".app-window")) return; event.preventDefault(); const rect = workspaceRef.current?.getBoundingClientRect(); setMenu({ x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) }); }} onClick={() => setMenu(null)}>
+    <div className="desktop-workspace" ref={workspaceRef} onContextMenu={event => { if ((event.target as HTMLElement).closest(".app-window")) return; event.preventDefault(); const rect = workspaceRef.current?.getBoundingClientRect(); setMenu({ x: Math.min(event.clientX - (rect?.left ?? 0), (rect?.width ?? 0) - 200), y: Math.min(event.clientY - (rect?.top ?? 0), (rect?.height ?? 0) - 190) }); }} onClick={() => setMenu(null)}>
       <div className="desktop-wallpaper" aria-hidden="true"><div className="wallpaper-cross cross-top" /><div className="wallpaper-cross cross-bottom" /><div className="wallpaper-identity"><div className="wallpaper-eyebrow"><span /> PERSONAL COMPUTING. REDEFINED.</div><div className="wallpaper-word">NEXUS<span>://OS</span></div><div className="wallpaper-bottom"><span>YOUR SYSTEM. YOUR RULES.</span><span>EST. 2026 — V.1.0</span></div></div><div className="wallpaper-wire"><svg viewBox="0 0 400 400" fill="none"><path d="M200 20 360 110v180L200 380 40 290V110L200 20Z M200 60 325 130v140L200 340 75 270V130L200 60Z M200 100 290 150v100l-90 50-90-50V150l90-50Z M200 140 255 170v60l-55 30-55-30v-60l55-30Z M200 20v120M360 110l-105 60M360 290l-105-60M200 380V260M40 290l105-60M40 110l105 60" /></svg></div><div className="wallpaper-coordinate">NX—01 / LOCAL ENVIRONMENT</div></div>
       <nav className={`desktop-shortcuts ${arrangeMode ? "is-arranging" : ""}`} aria-label="Desktop applications">{apps.map(app => <DesktopIcon key={app.id} id={app.id} cell={layout[app.id] ?? { col: 0, row: 0 }} arrange={arrangeMode} onDrop={(id, x, y) => { const cell = freeCell(cellFor(x, y, manager.bounds), takenCells(id), manager.bounds); saveLayout({ ...layout, [id]: cell }); }} />)}</nav>
       <div className="workspace-label"><span className="status-dot" /> WORKSPACE 01 <span>/</span> <span>LOCAL</span><Button variant="system" size="icon" className="arrange-toggle" title={arrangeMode ? "Lock shortcut positions" : "Arrange shortcuts"} aria-label={arrangeMode ? "Lock shortcut positions" : "Arrange shortcuts"} aria-pressed={arrangeMode} onClick={() => setArrangeMode(v => !v)}><LayoutGrid /></Button>{arrangeMode && <span className="arrange-hint">ARRANGE MODE — DRAG ICONS</span>}</div>
@@ -98,12 +98,22 @@ function Desktop() {
 export function StatusBar({ time, clock }: { time: Date | null; clock: string }) {
   return <header className="status-bar"><div className="brand"><Hexagon size={19} /><span>NEXUS<span>://OS</span></span><span className="version-badge">1.0</span></div><div className="session-status"><span className="status-dot" /> SYSTEM ONLINE <span className="status-divider">/</span><span className="session-user">root@nexus</span></div><div className="top-right"><span className="local-status"><Wifi size={13} /> LOCAL SESSION</span><span className="top-date">{time?.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase() ?? "—"}</span><time>{clock}</time></div></header>;
 }
-export function DesktopIcon({ id }: { id: AppId }) {
+export function DesktopIcon({ id, cell, arrange, onDrop }: { id: AppId; cell: IconCell; arrange: boolean; onDrop: (id: AppId, x: number, y: number) => void }) {
   const manager = useWindowManager();
+  const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
+  const start = useRef<{ px: number; py: number; x: number; y: number; moved: boolean } | null>(null);
   const app = apps.find(a => a.id === id);
   if (!app) return null;
   const Icon = app.icon;
-  return <Button variant="shortcut" className="desktop-icon" aria-label={`Open ${app.name}`} onClick={() => manager.open(id)}><span className="shortcut-icon"><Icon /><span className="shortcut-number">{app.code}</span></span><span className="shortcut-name">{app.name}</span></Button>;
+  const x = GRID.x + cell.col * GRID.w, y = GRID.y + cell.row * GRID.h;
+  const pos = drag ?? { x, y };
+  return <Button variant="shortcut" className={`desktop-icon ${drag ? "is-dragging" : ""}`} style={{ position: "absolute", left: pos.x, top: pos.y }} aria-label={`Open ${app.name}`}
+    onPointerDown={event => { if (!arrange || event.button !== 0) return; event.currentTarget.setPointerCapture(event.pointerId); start.current = { px: event.clientX, py: event.clientY, x, y, moved: false }; }}
+    onPointerMove={event => { const s = start.current; if (!s) return; const dx = event.clientX - s.px, dy = event.clientY - s.py; if (!s.moved && Math.hypot(dx, dy) < 4) return; s.moved = true; setDrag({ x: s.x + dx, y: s.y + dy }); }}
+    onPointerUp={() => { const s = start.current; start.current = null; if (s?.moved && drag) onDrop(id, drag.x, drag.y); setDrag(null); }}
+    onPointerCancel={() => { start.current = null; setDrag(null); }}
+    onClick={() => { if (!arrange) manager.open(id); }}
+    onDoubleClick={() => { if (arrange) manager.open(id); }}><span className="shortcut-icon"><Icon /><span className="shortcut-number">{app.code}</span></span><span className="shortcut-name">{app.name}</span></Button>;
 }
 export function Taskbar({ clock, showStatus, toggleStatus }: { clock: string; showStatus: boolean; toggleStatus: () => void }) {
   const manager = useWindowManager();
