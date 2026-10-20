@@ -1,4 +1,8 @@
 # NEXUS OS Phase 1
+## Keyboard shortcuts
+- [ ] Add shared configurable dispatch, window controls, launcher, palette and searchable help.
+- [ ] Wire safe Files, Notes and Forge actions and persistent folder creation.
+- [ ] Verify bindings, contexts, persistence, destructive confirmations and existing tests.
 ## PIXEL//FORGE filesystem integration
 - [x] Connect project saves and image exports to the shared IndexedDB filesystem projection.
 - [x] Connect Files open/rename/delete/move and terminal ls/cd/cat.
