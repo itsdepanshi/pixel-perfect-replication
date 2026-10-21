@@ -2,12 +2,26 @@ import "fake-indexeddb/auto";
 import { Blob as NodeBlob } from "node:buffer";
 import { describe, it, expect } from "vitest";
 import { readAll, subscribeLibrary, writeRecord, type DrawingProject, type StoredImage } from "./local-storage";
-import { FORGE_FOLDER, PICTURES, saveDrawing, readFilesystem, projectFile, renameFile, moveFile, deleteFile, saveImage, filesystemCommand } from "./virtual-filesystem";
+import { FORGE_FOLDER, PICTURES, saveDrawing, readFilesystem, projectFile, renameFile, moveFile, deleteFile, saveImage, filesystemCommand, createFolder, readDirectories, permanentlyDeleteFile, readTrash } from "./virtual-filesystem";
 
 // Node's structured-cloneable Blob models browser IndexedDB; jsdom's Blob cannot be cloned.
 function storedBlob(text: string): Blob { return new NodeBlob([text], { type: "image/png" }) as unknown as Blob; }
 function project(id: string): DrawingProject { return { id, name: id, width: 640, height: 480, background: null, modified: 1, swatches: ["#a3ff12"], layers: [{ id: "layer-1", name: "Hidden layer", visible: false, opacity: .35, blob: storedBlob("pixels") }] }; }
 describe("Shared virtual artwork files", () => {
+  it("created folders persist in IndexedDB and appear in Files and terminal paths", async () => {
+    const folder = await createFolder(PICTURES, "Keyboard Art");
+    expect(folder).toBe("/home/root/Pictures/Keyboard Art");
+    expect(await readAll<{ id: string }>("folders")).toContainEqual({ id: folder });
+    expect(await readDirectories()).toContain(folder);
+    expect(filesystemCommand('cd "Keyboard Art"', PICTURES, [])?.cwd).toBe(folder);
+    await expect(createFolder(PICTURES, "Keyboard Art")).rejects.toThrow("already exists");
+    await expect(createFolder(PICTURES, "../bad")).rejects.toThrow("without slashes");
+  });
+  it("permanent deletion removes the selected original record without adding it to the bin", async () => {
+    const p = project("permanent-keyboard"); await saveDrawing(p, false); await permanentlyDeleteFile(projectFile(p));
+    expect((await readFilesystem()).some(f => f.id === p.id)).toBe(false);
+    expect((await readTrash()).some(f => f.id === p.id)).toBe(false);
+  });
   it("saves native projects in the required folder preserving all editable data and notifies immediately", async () => {
     let changes = 0; const off = subscribeLibrary(() => changes++); const p = project("native"); await saveDrawing(p, false); off();
     const file = (await readFilesystem()).find(f => f.id === p.id);

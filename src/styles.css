@@ -368,3 +368,30 @@
 .desktop-shell.custom-cursor input, .desktop-shell.custom-cursor textarea { cursor: text; }
 .disk-numbers { display: flex; flex-wrap: wrap; gap: 6px 18px; }
 @media (min-width: 701px) { .workspace-label { left: auto; right: 24px; top: 52px; } }
+
+/* Shared NEXUS keyboard controls */
+.keyboard-settings { margin-top: 24px; min-width: 0; }
+.keyboard-settings > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.keyboard-settings h2 { display: flex; align-items: center; gap: 8px; font: 600 14px var(--font-controls); color: var(--primary); }
+.shortcut-filters { display: flex; gap: 8px; align-items: center; border-bottom: 1px solid var(--border); }
+.shortcut-filters .local-search { flex: 1; min-width: 0; border: 0; }
+.shortcut-filters select, .binding-input { background: var(--background); border: 1px solid var(--border); color: var(--foreground); font: 10px var(--font-system); padding: 7px; }
+.shortcut-filters select { max-width: 40%; }
+.shortcut-rows { max-height: 340px; overflow-y: auto; }
+.shortcut-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+.shortcut-row > span { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.shortcut-row strong { font-size: 10px; font-weight: 500; overflow-wrap: anywhere; }
+.shortcut-row small, .shortcut-platform-note { font-size: 8px; color: var(--muted-foreground); overflow-wrap: anywhere; }
+.binding-input { width: 180px; max-width: 48%; flex-shrink: 0; }
+.binding-input:focus { outline: 1px solid var(--primary); }
+.shortcut-row kbd { font: 9px var(--font-system); color: var(--primary); text-align: right; overflow-wrap: anywhere; max-width: 46%; }
+.shortcut-platform-note { display: block; margin-top: 12px; }
+.nexus-shortcut-dialog { width: min(640px, calc(100vw - 32px)); max-width: 640px; max-height: calc(100dvh - 40px); overflow-y: auto; z-index: 30000; background: var(--card); border: 1px solid var(--border); box-shadow: var(--window-shadow); }
+.nexus-shortcut-dialog > h2 { font: 600 14px var(--font-system); color: var(--primary); }
+.nexus-shortcut-dialog .keyboard-settings { margin-top: 0; }
+.command-results { display: flex; flex-direction: column; max-height: 430px; overflow-y: auto; }
+.command-results button { width: 100%; height: auto; min-height: 38px; justify-content: flex-start; gap: 10px; white-space: normal; text-align: left; border-bottom: 1px solid var(--border); }
+.command-results button > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.command-results small, .command-results kbd { color: var(--muted-foreground); font: 8px var(--font-system); overflow-wrap: anywhere; }
+.command-results button:focus { background: var(--accent); color: var(--primary); outline: 1px solid var(--primary); outline-offset: -1px; }
+.forge-dialog .keyboard-settings { margin-top: 0; width: 100%; }

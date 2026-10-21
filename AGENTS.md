@@ -26,3 +26,6 @@
 - Project virtual files are projections of the existing drawings records, with folder metadata and stable IDs; image exports use the same IndexedDB library, because duplicating artwork into file records causes stale data. Files, Forge and the allowlisted terminal share virtual-filesystem helpers and commit notifications.
 - Route file-open requests through WindowManager as identified requests, because new and already-running Forge windows must load projects with their existing discard protection.
 - Register discard protection through WindowManager close guards and isolate studio shortcuts to the active window, because drawing must not override other desktop applications.
+
+- Dispatch desktop and editor shortcuts through ShortcutSystem and registered app actions; Forge has no duplicate key listener, so custom bindings and context safeguards apply consistently.
+- Store user-created virtual folders in the existing IndexedDB library and hydrate the shared directory projection on filesystem reads, so Files and the terminal see the same durable paths.

@@ -14,7 +14,12 @@ export function useGameKeys(enabled: boolean, handler: (e: KeyboardEvent) => boo
   useEffect(() => {
     if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.defaultPrevented || e.isComposing || document.hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      if (target?.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])")) return;
+      const activeWindow = document.querySelector(".app-window.is-active:not([hidden])");
+      if (activeWindow?.getAttribute("data-app-id") !== "games") return;
+      if (Array.from(document.querySelectorAll<HTMLElement>("[role='dialog'], [role='alertdialog'], .local-confirm-overlay")).some(element => element.getClientRects().length > 0 && !element.classList.contains("arcade-overlay"))) return;
       if (ref.current(e)) { e.preventDefault(); e.stopPropagation(); }
     };
     window.addEventListener("keydown", onKey, true);

@@ -1,9 +1,30 @@
-import { readAll, writeRecord, deleteRecord, updateLibraryRecord, subscribeLibrary, type DrawingProject, type StoredImage, type TrashedItem } from "./local-storage";
+import { readAll, writeRecord, deleteRecord, updateLibraryRecord, subscribeLibrary, type DrawingProject, type StoredImage, type TrashedItem, type StoredFolder } from "./local-storage";
 
 export const PICTURES = "/home/root/Pictures";
 export const FORGE_FOLDER = `${PICTURES}/Pixel Forge`;
 export const TRASH = "/system/Trash";
 export const directories = ["/", "/home", "/home/root", "/documents", "/downloads", "/system", TRASH, PICTURES, FORGE_FOLDER];
+const builtInDirectories = [...directories];
+export async function readDirectories() {
+  const folders = await readAll<StoredFolder>("folders");
+  directories.splice(0, directories.length, ...new Set([...builtInDirectories, ...folders.map(f => f.id)]));
+  return directories;
+}
+export async function createFolder(parent: string, name: string) {
+  const clean = name.trim();
+  if (!validFilename(clean)) throw new Error("Use a folder name without slashes.");
+  await readDirectories();
+  if (!directories.includes(parent) || parent === TRASH) throw new Error("Choose an existing folder outside the Recycle Bin.");
+  const id = resolvePath(clean, parent);
+  if (directories.includes(id)) throw new Error("A folder with this name already exists.");
+  await updateLibraryRecord<StoredFolder>("folders", id, previous => {
+    if (previous) throw new Error("A folder with this name already exists.");
+    return { id };
+  });
+  await readDirectories();
+  return id;
+}
+export function permanentlyDeleteFile(file: VirtualFile) { return deleteRecord(file.kind === "project" ? "drawings" : "images", file.id); }
 export type VirtualFile = { id: string; name: string; folder: string; kind: "project" | "image"; size: number; width: number; height: number; modified: number; layers?: number; project?: DrawingProject; image?: StoredImage };
 export const subscribeFilesystem = subscribeLibrary;
 export function resolvePath(path: string, cwd = "/home/root") {
@@ -16,7 +37,7 @@ export function projectFilename(name: string) { return name.replace(/\.nexus$/i,
 export function validFilename(name: string) { return !!name.trim() && !/[\/\\\x00-\x1f]/.test(name) && name !== "." && name !== ".."; }
 export function projectFile(p: DrawingProject): VirtualFile { return { id: p.id, name: projectFilename(p.name), folder: p.folder ?? FORGE_FOLDER, kind: "project", size: p.layers.reduce((sum, l) => sum + l.blob.size, 0), width: p.width, height: p.height, modified: p.modified, layers: p.layers.length, project: p }; }
 export async function readFilesystem(): Promise<VirtualFile[]> {
-  const [projects, images] = await Promise.all([readAll<DrawingProject>("drawings"), readAll<StoredImage>("images")]);
+  const [projects, images] = await Promise.all([readAll<DrawingProject>("drawings"), readAll<StoredImage>("images"), readDirectories()]);
   return [...projects.map(projectFile), ...images.map(image => ({ ...image, kind: "image" as const, size: image.blob.size, image }))];
 }
 export function children(path: string, files: VirtualFile[]) {
