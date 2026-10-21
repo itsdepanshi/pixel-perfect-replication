@@ -36,7 +36,14 @@ export function eventBinding(event: Pick<KeyboardEvent, "key" | "ctrlKey" | "alt
   return [...(event.ctrlKey ? ["Ctrl"] : []), ...(event.altKey ? ["Alt"] : []), ...(event.shiftKey && (event.key.length !== 1 || /[a-z]/i.test(event.key)) ? ["Shift"] : []), ...(event.metaKey ? ["Meta"] : []), normalizeKey(event.key)].join("+");
 }
 export function bindingFor(shortcut: Shortcut, bindings: Bindings) { return bindings[shortcut.id] ?? shortcut.keys; }
-export function validBinding(value: string) { return /^(?:(?:Ctrl|Alt|Shift|Meta)\+)*(?:Meta|Space|Arrow(?:Up|Down|Left|Right)|Escape|Tab|Delete|Backspace|Enter|F(?:[1-9]|1[0-2])|[^+\s])$/.test(value) && value.length < 64; }
+export function validBinding(value: string) {
+  if (value.length >= 64) return false;
+  if (value === "Meta") return true;
+  const parts = value.split("+"); const key = parts.pop();
+  if (!key || !/^(?:Space|Arrow(?:Up|Down|Left|Right)|Escape|Tab|Delete|Backspace|Enter|F(?:[1-9]|1[0-2])|[^+\s])$/.test(key)) return false;
+  const order = ["Ctrl", "Alt", "Shift", "Meta"];
+  return parts.every((part, i) => order.includes(part) && (i === 0 || order.indexOf(part) > order.indexOf(parts[i - 1] ?? "")));
+}
 export function parseBindings(raw: string | null): Bindings {
   try { const parsed: unknown = JSON.parse(raw ?? "{}"); if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {}; return Object.fromEntries(Object.entries(parsed).filter(([id, value]) => shortcuts.some(s => s.id === id) && typeof value === "string" && validBinding(value))); } catch { return {}; }
 }

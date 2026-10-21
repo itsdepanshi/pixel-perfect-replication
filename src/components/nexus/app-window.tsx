@@ -18,7 +18,7 @@ export function AppWindow({ window: w }: { window: WindowState }) {
   if (!app) return null;
   const active = manager.active === w.id;
   const Icon = app.icon;
-  return <section aria-label={`${app.name} window`} className={`app-window ${active ? "is-active" : ""} ${w.maximized ? "is-maximized" : ""}`} hidden={w.minimized} style={{ left: w.maximized ? 12 : w.x, top: w.maximized ? 12 : w.y, width: w.maximized ? manager.bounds.width - 24 : w.width, height: w.maximized ? manager.bounds.height - 24 : w.height, zIndex: w.z }} onPointerDown={() => manager.focus(w.id)}>
+  return <section aria-label={`${app.name} window`} data-app-id={w.id} className={`app-window ${active ? "is-active" : ""} ${w.maximized ? "is-maximized" : ""}`} hidden={w.minimized} style={{ left: w.maximized ? 12 : w.x, top: w.maximized ? 12 : w.y, width: w.maximized ? manager.bounds.width - 24 : w.width, height: w.maximized ? manager.bounds.height - 24 : w.height, zIndex: w.z }} onPointerDown={() => manager.focus(w.id)}>
     <header className="window-titlebar" onDoubleClick={event => { if (!(event.target as HTMLElement).closest("button")) manager.maximize(w.id); }} onPointerDown={event => {
       if (w.maximized || event.button !== 0 || (event.target as HTMLElement).closest("button")) return;
       event.currentTarget.setPointerCapture(event.pointerId);

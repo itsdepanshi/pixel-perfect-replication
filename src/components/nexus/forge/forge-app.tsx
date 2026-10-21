@@ -5,9 +5,10 @@ import { useWindowManager } from "../window-manager";
 import { readAll, type DrawingProject } from "../local-storage";
 import { FORGE_FOLDER, PICTURES, saveDrawing, saveImage, subscribeFilesystem, projectFile, renameFile, deleteFile } from "../virtual-filesystem";
 import { ForgeEngine, type Tool } from "./engine";
+import { useAppShortcuts, KeyboardSettings } from "../shortcut-system";
 import { validDimensions, toArtwork, type Point } from "./geometry";
 
-const tools = [ ["pencil", Pencil, "Pencil · P"], ["brush", Paintbrush, "Brush · B"], ["eraser", Eraser, "Eraser · E"], ["line", Minus, "Line · L"], ["rectangle", Square, "Rectangle · R"], ["ellipse", Circle, "Ellipse · O"], ["fill", PaintBucket, "Fill · F"], ["eyedropper", Pipette, "Eyedropper · I"], ["pan", Hand, "Pan · H"] ] as const;
+const tools = [ ["pencil", Pencil, "Pencil · B"], ["brush", Paintbrush, "Brush · P"], ["eraser", Eraser, "Eraser · E"], ["line", Minus, "Line · L"], ["rectangle", Square, "Rectangle · R"], ["ellipse", Circle, "Ellipse · O"], ["fill", PaintBucket, "Fill · F"], ["eyedropper", Pipette, "Eyedropper · I"], ["pan", Hand, "Pan · H"] ] as const;
 const initialColors = ["#A3FF12", "#FFFFFF", "#030504", "#FFB547", "#EF6461", "#59D3E6", "#B886EF", "#F19FC5"];
 type Dialog = "new" | "resize" | "projects" | "save" | "export" | "help" | null;
 function download(file: Blob, name: string) { const url = URL.createObjectURL(file); const a = document.createElement("a"); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 2000); }
@@ -70,21 +71,25 @@ export function ForgeApp({ active }: { active: boolean }) {
   async function renameProject(p: DrawingProject) { const value = window.prompt("Project name", p.name)?.trim(); if (!value) return; try { await renameFile(projectFile(p), value); } catch { setError("Project could not be renamed."); } }
   async function exportImage() { const e = engine.current; if (!e || (!saveExport && !downloadExport)) return; setBusy(true); try { const file = await e.export(exportType, jpegBackground); const filename = `${name.trim() || "drawing"}.${exportType === "image/png" ? "png" : "jpg"}`; if (saveExport) await saveImage({ id: crypto.randomUUID(), name: filename, folder: PICTURES, blob: file, width: e.width, height: e.height, modified: Date.now() }); if (downloadExport) download(file, filename); setDialog(null); } catch { setError("Artwork could not be exported."); } finally { setBusy(false); } }
   async function importImage(file: File) { const e = engine.current; if (!e) return; if (importNew && !allowDiscard()) return; setBusy(true); try { await e.importImage(file, importNew); if (importNew) { setProjectId(null); setName(file.name.replace(/\.[^.]+$/, "")); setSavedRevision(-1); } } catch (err) { setError(err instanceof Error ? err.message : "Image could not be opened."); } finally { setBusy(false); } }
+  useAppShortcuts("forge", id => {
+    const e = engine.current; if (!active || dialog || busy || !e) return false;
+    if (id === "save") { if (projectIdRef.current) void save(); else setDialog("save"); }
+    else if (id === "undo") e.undo();
+    else if (id === "redo") e.redo();
+    else if (tools.some(([toolId]) => toolId === id)) chooseTool(id as Tool);
+    else if (id === "smaller" || id === "larger") { e.options.size = Math.max(1, Math.min(100, e.options.size + (id === "smaller" ? -1 : 1))); redraw(); }
+    else if (id === "zoom-in" || id === "zoom-out") e.zoom(e.view.zoom * (id === "zoom-out" ? .8 : 1.25));
+    else if (id === "fit") e.fit();
+    else if (id === "cancel") e.cancel();
+    else if (id === "forge-help") setDialog("help");
+    else return false;
+    return true;
+  });
   useEffect(() => {
-    const listener = (event: KeyboardEvent) => {
-      if (!activeRef.current || document.hidden || dialog || busy || (event.target instanceof HTMLElement && event.target.closest("input, textarea, select, [contenteditable]"))) return;
-      const e = engine.current; if (!e) return; const key = event.key.toLowerCase();
-      if (event.ctrlKey || event.metaKey) { if (key === "z") { event.preventDefault(); event.stopPropagation(); event.shiftKey ? e.redo() : e.undo(); } else if (key === "y") { event.preventDefault(); e.redo(); } else if (key === "s") { event.preventDefault(); setDialog("save"); } return; }
-      const hotkeys: Record<string, Tool> = { p: "pencil", b: "brush", e: "eraser", l: "line", r: "rectangle", o: "ellipse", f: "fill", i: "eyedropper", h: "pan" };
-      const next = hotkeys[key]; if (next) { event.preventDefault(); event.stopPropagation(); chooseTool(next); }
-      else if (key === "[" || key === "]") { e.options.size = Math.max(1, Math.min(100, e.options.size + (key === "[" ? -1 : 1))); redraw(); }
-      else if (key === "+" || key === "=" || key === "-") { event.preventDefault(); e.zoom(e.view.zoom * (key === "-" ? .8 : 1.25)); }
-      else if (key === "0") { e.fit(); } else if (key === "escape") e.cancel(); else if (key === "?") setDialog("help");
-    };
     const hidden = () => { if (document.hidden) { engine.current?.finish(); pointer.current = null; } };
-    window.addEventListener("keydown", listener, true); document.addEventListener("visibilitychange", hidden);
-    return () => { window.removeEventListener("keydown", listener, true); document.removeEventListener("visibilitychange", hidden); };
-  }, [dialog, busy]);
+    document.addEventListener("visibilitychange", hidden);
+    return () => document.removeEventListener("visibilitychange", hidden);
+  }, []);
   useEffect(() => { const c = surface.current; if (!c) return; const wheel = (event: WheelEvent) => { if (!activeRef.current || busy || dialog) return; event.preventDefault(); engine.current?.finish(); pointer.current = null; const rect = c.getBoundingClientRect(); const e = engine.current; if (e) e.zoom(e.view.zoom * (event.deltaY > 0 ? .9 : 1.1), { x: event.clientX - rect.left, y: event.clientY - rect.top }); }; c.addEventListener("wheel", wheel, { passive: false }); return () => c.removeEventListener("wheel", wheel); }, [busy, dialog]);
   function point(event: PointerEvent<HTMLCanvasElement>) { const r = event.currentTarget.getBoundingClientRect(); return { x: event.clientX - r.left, y: event.clientY - r.top }; }
   function start(event: PointerEvent<HTMLCanvasElement>) {
@@ -115,7 +120,7 @@ export function ForgeApp({ active }: { active: boolean }) {
       {dialog === "save" && <><label>PROJECT NAME<input aria-label="Project name" value={name} maxLength={100} onChange={event => { setName(event.target.value); setSavedRevision(-1); }} /></label><p>{projectId ? projectFolder : FORGE_FOLDER}/{name.replace(/\.nexus$/i, "")}.nexus</p><Button disabled={!name.trim() || busy} onClick={() => void save()}><Save />{busy ? "Saving…" : "Save project"}</Button></>}
       {dialog === "export" && <><label>FORMAT<select aria-label="Export format" value={exportType} onChange={event => setExportType(event.target.value === "image/jpeg" ? "image/jpeg" : "image/png")}><option value="image/png">PNG</option><option value="image/jpeg">JPEG</option></select></label>{exportType === "image/jpeg" && <label>JPEG BACKGROUND<input aria-label="JPEG background" type="color" value={jpegBackground} onChange={event => setJpegBackground(event.target.value)} /></label>}<label className="forge-check"><input type="checkbox" aria-label="Save image to Pictures" checked={saveExport} onChange={event => setSaveExport(event.target.checked)} /> Save to Pictures</label><label className="forge-check"><input type="checkbox" aria-label="Download to computer" checked={downloadExport} onChange={event => setDownloadExport(event.target.checked)} /> Download to computer</label><p>Flattened image. Save a project to keep editable layers.</p><Button disabled={busy || (!saveExport && !downloadExport)} onClick={() => void exportImage()}><Download /> Export {exportType === "image/png" ? "PNG" : "JPEG"}</Button></>}
       {dialog === "projects" && <div className="forge-project-list">{projects.length ? projects.map(p => <div key={p.id}><Button variant="system" className="forge-project-open" disabled={busy} onClick={() => void openProject(p)}><FolderOpen /><span><strong>{p.name}</strong><small>{p.width} × {p.height} / {p.layers.length} layers</small></span></Button>{icon(`Rename ${p.name}`, Pencil, () => void renameProject(p))}{icon(`Delete ${p.name}`, Trash2, () => void removeProject(p))}</div>) : <p>No projects saved on this device yet.</p>}</div>}
-      {dialog === "help" && <dl className="forge-help">{[["P / B / E", "Pencil / brush / eraser"], ["L / R / O", "Line / rectangle / ellipse"], ["F / I / H", "Fill / eyedropper / pan"], ["Ctrl or ⌘ + Z", "Undo"], ["Ctrl or ⌘ + Shift + Z", "Redo"], ["Ctrl or ⌘ + S", "Save project"], ["[ / ]", "Brush size"], ["+ / − / 0", "Zoom in / out / fit"], ["Wheel", "Zoom around pointer"], ["Middle drag", "Pan canvas"], ["Escape", "Cancel current stroke"]].map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>}
+      {dialog === "help" && <KeyboardSettings editable={false} />}
     </section></div>}
   </div>;
 }
