@@ -3,6 +3,7 @@ import { Trash2, Undo2, XCircle, Paintbrush, FileImage } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { readTrash, restoreFile, deletePermanently, emptyTrash, subscribeFilesystem } from "./virtual-filesystem";
 import type { TrashedItem } from "./local-storage";
+import { useAppShortcuts } from "./shortcut-system";
 
 export function TrashApp() {
   const [items, setItems] = useState<TrashedItem[]>([]);
@@ -15,6 +16,7 @@ export function TrashApp() {
     return () => { alive = false; unsubscribe(); };
   }, []);
   async function action(work: () => Promise<unknown>) { setError(""); try { await work(); } catch (err) { setError(err instanceof Error ? err.message : "Recycle Bin action failed."); } }
+  useAppShortcuts("trash", id => { if (id !== "refresh") return false; void action(async () => setItems((await readTrash()).sort((a, b) => b.deletedAt - a.deletedAt))); return true; });
   return <div className="app-preview files-app">
     <div className="preview-heading"><Trash2 size={28} /><div><p>DELETED ITEMS</p><h2>Recycle Bin</h2></div><span className="phase-label">LOCAL</span></div>
     {error && <div role="alert" className="local-error">{error}</div>}

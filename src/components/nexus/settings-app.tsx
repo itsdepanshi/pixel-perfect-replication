@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Settings2, MousePointer2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { KeyboardSettings } from "./shortcut-system";
 
 export const CURSOR_KEY = "nexus-custom-cursor";
 export const CURSOR_EVENT = "nexus:cursor-preference";
@@ -22,6 +23,7 @@ export function SettingsApp() {
       <div><MousePointer2 size={15} /><Button variant="system" className="files-entry" aria-pressed={cursor} aria-label="Toggle custom NEXUS cursor" onClick={toggle}><pre>Custom NEXUS cursor</pre></Button><small>{cursor ? "ON — neon pointer theme" : "OFF — system cursor"}</small><Button variant="system" onClick={toggle}>{cursor ? "Disable" : "Enable"}</Button></div>
       <div><Settings2 size={15} /><Button variant="system" className="files-entry" disabled><pre>Environment</pre></Button><small>NEXUS OS 1.0.0 · local sandbox · Phosphor theme</small></div>
     </div>
+    <KeyboardSettings />
     <p className="preview-status"><span className="status-dot" /> SETTINGS ARE SAVED ON THIS DEVICE</p>
   </div>;
 }

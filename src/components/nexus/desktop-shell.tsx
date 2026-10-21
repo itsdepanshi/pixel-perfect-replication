@@ -8,6 +8,7 @@ import { SECRET_EVENT } from "./terminal-commands";
 import { unlockSecretBonus } from "./arcade/progression";
 import { ARCADE_BONUS_EVENT } from "./arcade/arcade-app";
 import { CURSOR_EVENT, readCursorPreference } from "./settings-app";
+import { ShortcutSystem, useShortcuts } from "./shortcut-system";
 
 type IconCell = { col: number; row: number };
 const GRID = { x: 22, y: 30, w: 96, h: 104 };
@@ -38,7 +39,7 @@ function freeCell(target: IconCell, taken: Set<string>, bounds: { width: number;
 }
 
 export function DesktopShell() {
-  return <WindowManager><Desktop /></WindowManager>;
+  return <WindowManager><ShortcutSystem><Desktop /></ShortcutSystem></WindowManager>;
 }
 function Desktop() {
   const manager = useWindowManager();
@@ -117,5 +118,6 @@ export function DesktopIcon({ id, cell, arrange, onDrop }: { id: AppId; cell: Ic
 }
 export function Taskbar({ clock, showStatus, toggleStatus }: { clock: string; showStatus: boolean; toggleStatus: () => void }) {
   const manager = useWindowManager();
+  const shortcuts = useShortcuts();
   return <footer className="taskbar"><div className="taskbar-left"><Button variant="system" size="icon" aria-label="Open Terminal from launcher" title="Terminal launcher" className="launcher-button" onClick={() => manager.open("terminal")}><Command /></Button><span className="taskbar-separator" /><div className="taskbar-apps">{apps.map(app => { const running = manager.windows.some(w => w.id === app.id); const Icon = app.icon; return <Button key={app.id} variant="task" className="taskbar-app" aria-label={`Show ${app.name}`} title={app.name} data-running={running} data-active={manager.active === app.id} onClick={() => manager.open(app.id)}><Icon />{running && <span className="running-indicator" />}</Button>; })}</div></div><div className="taskbar-center"><span className="status-dot" /> {String(manager.windows.length).padStart(2, "0")} PROCESSES <span>/</span> WORKSPACE 01</div><div className="taskbar-right"><Button variant="system" size="icon" title="Toggle simulated system status" aria-label="Toggle simulated system status" aria-pressed={showStatus} onClick={toggleStatus}><Activity /></Button><Wifi size={15} /><span className="taskbar-separator" /><div className="taskbar-clock"><time>{clock.slice(0, 5)}</time><span>LOCAL TIME</span></div></div></footer>;
 }

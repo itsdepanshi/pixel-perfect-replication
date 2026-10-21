@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { FileText, Plus, Save, Search, Trash2, Check, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cancelNote, deleteRecord, flushNotes, readAll, scheduleNote, writeRecord, type Note } from "./local-storage";
+import { useAppShortcuts } from "./shortcut-system";
 
 export function NotesApp() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -64,6 +65,7 @@ export function NotesApp() {
     setBusy(false);
   }
   const status = active ? statuses[active.id] ?? "Saved" : "";
+  useAppShortcuts("notes", id => { if (id !== "save" || !active || loading || busy || deleting) return false; void manualSave(); return true; });
   return <div className="notes-app local-app">
     <div className="local-app-toolbar"><span className="app-section-title"><FileText size={15} /> NOTES <span>{notes.length.toString().padStart(2, "0")}</span></span><Button variant="system" className="primary-action" disabled={loading || busy} onClick={() => void newNote()}><Plus /> New Note</Button></div>
     {error && <div className="local-error" role="alert"><AlertTriangle size={13} />{error}</div>}

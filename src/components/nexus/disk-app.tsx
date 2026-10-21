@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useWindowManager } from "./window-manager";
 import { readFilesystem, subscribeFilesystem, type VirtualFile } from "./virtual-filesystem";
 import { readAll, type Note, type Track } from "./local-storage";
+import { useAppShortcuts } from "./shortcut-system";
 
 /** The virtual filesystem has no real capacity limit; this is a clearly labelled simulated capacity. */
 export const SIMULATED_CAPACITY = 512 * 1024 * 1024;
@@ -41,6 +42,7 @@ export function DiskApp() {
     } catch { setError("Storage could not be read from this device."); }
   }
   useEffect(() => { void recalculate(); return subscribeFilesystem(() => void recalculate()); }, []);
+  useAppShortcuts("disk", id => { if (id !== "refresh") return false; void recalculate(); return true; });
   const used = breakdown.reduce((sum, c) => sum + c.bytes, 0);
   const percent = Math.min(100, (used / SIMULATED_CAPACITY) * 100);
   const largest = [...files].sort((a, b) => b.size - a.size).slice(0, 5);
