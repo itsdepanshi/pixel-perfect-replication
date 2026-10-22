@@ -5,7 +5,7 @@ describe("NEXUS keyboard rules", () => {
   it.each([
     ["terminal", "Ctrl+Alt+T"], ["files", "Meta+E"], ["settings", "Meta+I"], ["launcher", "Meta"],
     ["switch", "Alt+Tab"], ["close", "Alt+F4"], ["maximize", "Meta+ArrowUp"], ["minimize", "Meta+ArrowDown"],
-    ["palette", "Ctrl+K"], ["help", "Meta+/"], ["folder", "Ctrl+Shift+N"], ["rename", "F2"],
+    ["palette", "Alt+Space"], ["help", "F1"], ["folder", "Ctrl+Shift+N"], ["rename", "F2"],
     ["delete", "Delete"], ["permanent", "Shift+Delete"], ["refresh", "F5"], ["save", "Ctrl+S"],
     ["undo", "Ctrl+Z"], ["redo", "Ctrl+Y"], ["pencil", "B"], ["eraser", "E"], ["pan", "H"],
   ])("%s has the requested binding %s", (id, keys) => {
@@ -39,7 +39,7 @@ describe("NEXUS keyboard rules", () => {
     expect(findShortcut("Ctrl+Alt+T", {}, null)?.id).toBe("terminal");
   });
   it("warns for conflicts with primary and alternate keys", () => {
-    expect(bindingConflict("terminal", "Ctrl+K", {})).toContain("Command palette");
+    expect(bindingConflict("terminal", "Alt+Space", {})).toContain("Command palette");
     expect(bindingConflict("terminal", "Ctrl+Alt+E", {})).toContain("Open Files");
     expect(bindingConflict("terminal", "Ctrl+Alt+Q", {})).toBeNull();
   });
@@ -58,6 +58,13 @@ describe("NEXUS keyboard rules", () => {
 import { findShortcut as fs2 } from "./shortcut-logic";
 import { test as t2, expect as e2 } from "vitest";
 t2("global modifier shortcuts work while typing, plain keys do not", () => {
-  e2(fs2("Ctrl+K", {}, "terminal", true)?.id).toBe("palette");
+  e2(fs2("Alt+Space", {}, "terminal", true)?.id).toBe("palette");
+  e2(fs2("F1", {}, "terminal", true)?.id).toBe("help");
   e2(fs2("F2", {}, "files", true)).toBeUndefined();
+});
+it("retires legacy palette and guide bindings without discarding unrelated customizations", () => {
+  expect(parseBindings('{"palette":"Ctrl+K","help":"Meta+/","terminal":"Ctrl+Alt+Q"}')).toEqual({ terminal: "Ctrl+Alt+Q" });
+  expect(parseBindings('{"palette":"Ctrl+Shift+P"}')).toEqual({});
+  expect(findShortcut("Ctrl+K", {}, null)).toBeUndefined();
+  expect(findShortcut("Ctrl+Shift+P", {}, null)).toBeUndefined();
 });

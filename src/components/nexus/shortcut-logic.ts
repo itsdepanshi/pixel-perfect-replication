@@ -10,8 +10,8 @@ export const shortcuts: Shortcut[] = [
   { id: "close", label: "Close active window", category: "Windows", scope: "global", keys: "Alt+F4", alternate: "Ctrl+Alt+W" },
   { id: "maximize", label: "Maximize / restore", category: "Windows", scope: "global", keys: "Meta+ArrowUp", alternate: "Ctrl+Alt+ArrowUp" },
   { id: "minimize", label: "Minimize", category: "Windows", scope: "global", keys: "Meta+ArrowDown", alternate: "Ctrl+Alt+ArrowDown" },
-  { id: "palette", label: "Command palette", category: "Desktop", scope: "global", keys: "Ctrl+K" },
-  { id: "help", label: "Keyboard shortcuts", category: "Desktop", scope: "global", keys: "Meta+/", alternate: "Ctrl+Alt+/" },
+  { id: "palette", label: "Command palette", category: "Desktop", scope: "global", keys: "Alt+Space" },
+  { id: "help", label: "Keyboard shortcuts", category: "Desktop", scope: "global", keys: "F1", alternate: "Ctrl+Alt+/" },
   { id: "folder", label: "New folder", category: "Files", scope: "files", keys: "Ctrl+Shift+N" },
   { id: "rename", label: "Rename selected file", category: "Files", scope: "files", keys: "F2" },
   { id: "delete", label: "Move selected file to Recycle Bin", category: "Files", scope: "files", keys: "Delete" },
@@ -45,10 +45,10 @@ export function validBinding(value: string) {
   return parts.every((part, i) => order.includes(part) && (i === 0 || order.indexOf(part) > order.indexOf(parts[i - 1] ?? "")));
 }
 export function parseBindings(raw: string | null): Bindings {
-  try { const parsed: unknown = JSON.parse(raw ?? "{}"); if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {}; return Object.fromEntries(Object.entries(parsed).filter(([id, value]) => shortcuts.some(s => s.id === id) && typeof value === "string" && validBinding(value))); } catch { return {}; }
+  try { const parsed: unknown = JSON.parse(raw ?? "{}"); if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {}; return Object.fromEntries(Object.entries(parsed).filter(([id, value]) => shortcuts.some(s => s.id === id) && typeof value === "string" && validBinding(value) && !(id === "palette" && ["Ctrl+K", "Ctrl+Shift+P"].includes(value)) && !(id === "help" && value === "Meta+/"))); } catch { return {}; }
 }
 export function eligible(shortcut: Shortcut, active: AppId | null, typing: boolean, editor: boolean, modal: boolean, binding = "") {
-  const combo = shortcut.scope === "global" && /(?:^|\+)(?:Ctrl|Meta)\+/.test(binding) && !/Ctrl\+Alt/.test(binding);
+  const combo = shortcut.scope === "global" && (/(?:^|\+)(?:Ctrl|Alt|Meta)\+/.test(binding) || shortcut.id === "help") && !/Ctrl\+Alt/.test(binding);
   if (modal || (typing && !combo && !(shortcut.id === "save" && editor))) return false;
   return shortcut.scope === "global" || shortcut.scope === active || (shortcut.scope === "editor" && (active === "notes" || active === "forge")) || (shortcut.scope === "refresh" && (active === "files" || active === "disk" || active === "trash"));
 }

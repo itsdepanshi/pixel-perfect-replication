@@ -9,7 +9,7 @@ import { BINDINGS_KEY, shortcuts, bindingFor, bindingConflict, eventBinding, fin
 
 type Handler = (id: string) => boolean;
 type Panel = "launcher" | "palette" | "help" | null;
-type System = { bindings: Bindings; panel: Panel; show: (panel: Panel) => void; register: (app: AppId, handler: Handler) => () => void; setBinding: (id: string, value: string) => string | null; reset: () => void; run: (id: string) => boolean };
+type System = { bindings: Bindings; panel: Panel; restriction: string; show: (panel: Panel) => void; register: (app: AppId, handler: Handler) => () => void; setBinding: (id: string, value: string) => string | null; reset: () => void; run: (id: string) => boolean };
 const Context = createContext<System | null>(null);
 export function useShortcuts() { const value = useContext(Context); if (!value) throw new Error("Shortcut system is not mounted"); return value; }
 export function useAppShortcuts(app: AppId, handler: Handler) {
@@ -18,6 +18,7 @@ export function useAppShortcuts(app: AppId, handler: Handler) {
 }
 export function ShortcutSystem({ children }: { children: ReactNode }) {
   const manager = useWindowManager(); const [bindings, setBindings] = useState<Bindings>({}); const [panel, show] = useState<Panel>(null);
+  const [restriction, setRestriction] = useState("");
   const handlers = useRef(new Map<AppId, Handler>());
   const register = useRef((app: AppId, handler: Handler) => { handlers.current.set(app, handler); return () => { if (handlers.current.get(app) === handler) handlers.current.delete(app); }; }).current;
   useEffect(() => { try { setBindings(parseBindings(localStorage.getItem(BINDINGS_KEY))); } catch { setBindings({}); } const sync = (e: StorageEvent) => { if (e.key === BINDINGS_KEY) setBindings(parseBindings(e.newValue)); }; window.addEventListener("storage", sync); return () => window.removeEventListener("storage", sync); }, []);
@@ -41,7 +42,11 @@ export function ShortcutSystem({ children }: { children: ReactNode }) {
       const editor = !!target?.closest(".note-title, .note-body");
       const modal = !!state.panel || Array.from(document.querySelectorAll<HTMLElement>("[role='dialog'], [role='alertdialog'], .local-confirm-overlay, .boot-screen, [aria-busy='true']")).some(element => element.getClientRects().length > 0);
       const shortcut = findShortcut(binding, state.bindings, state.manager.active, typing, editor, modal);
-      if (shortcut && state.run(shortcut.id)) { event.preventDefault(); event.stopImmediatePropagation(); }
+      if (shortcut && state.run(shortcut.id)) {
+        event.preventDefault();
+        if (!event.defaultPrevented) setRestriction(`${shortcut.label}: this browser did not allow NEXUS to cancel the default action.`);
+        event.stopImmediatePropagation();
+      }
     };
     const down = (event: KeyboardEvent) => { if (event.defaultPrevented || event.isComposing || event.repeat || document.hidden) return; if (event.key === "Meta") { metaSolo = true; return; } metaSolo = false; dispatch(event, eventBinding(event)); };
     const up = (event: KeyboardEvent) => { if (event.key === "Meta" && metaSolo) dispatch(event, "Meta"); metaSolo = false; };
@@ -49,7 +54,7 @@ export function ShortcutSystem({ children }: { children: ReactNode }) {
     return () => { window.removeEventListener("keydown", down, true); window.removeEventListener("keyup", up, true); };
   }, []);
   useEffect(() => { const element = document.activeElement; if (element instanceof HTMLElement && element.closest(".app-window")?.getAttribute("data-app-id") !== manager.active) element.blur(); }, [manager.active]);
-  const system: System = { bindings, panel, show, register, run, reset: () => { persist({}); }, setBinding: (id, value) => { if (!validBinding(value)) return "Choose a key or a key with modifiers."; const conflict = bindingConflict(id, value, bindings); if (conflict) return conflict; return persist({ ...bindings, [id]: value }); } };
+  const system: System = { bindings, panel, restriction, show, register, run, reset: () => { persist({}); }, setBinding: (id, value) => { if (id === "palette" && value === "Ctrl+Shift+P") return "Ctrl+Shift+P is not available for Command Palette."; if (!validBinding(value)) return "Choose a key or a key with modifiers."; const conflict = bindingConflict(id, value, bindings); if (conflict) return conflict; return persist({ ...bindings, [id]: value }); } };
   return <Context.Provider value={system}>{children}<ShortcutPanel /></Context.Provider>;
 }
 export function KeyboardSettings({ editable = true }: { editable?: boolean }) {
@@ -59,7 +64,9 @@ export function KeyboardSettings({ editable = true }: { editable?: boolean }) {
     <div className="shortcut-filters"><label className="local-search"><Search size={14} /><input aria-label="Search keyboard shortcuts" placeholder="Search shortcuts…" value={query} onChange={e => setQuery(e.target.value)} /></label><select aria-label="Shortcut category" value={category} onChange={e => setCategory(e.target.value)}>{["All", ...new Set(shortcuts.map(s => s.category))].map(c => <option key={c}>{c}</option>)}</select></div>
     {error && <p role="alert" className="local-error">{error}</p>}
     <div className="shortcut-rows">{shortcuts.filter(s => (category === "All" || s.category === category) && `${s.label} ${s.category} ${bindingFor(s, system.bindings)}`.toLowerCase().includes(query.toLowerCase())).map(s => <div className="shortcut-row" key={s.id}><span><strong>{s.label}</strong><small>{s.category}{s.alternate ? ` · Alternate: ${s.alternate.replaceAll("Meta", "Win / Cmd")}` : ""}</small></span>{editable ? <input aria-label={`Binding for ${s.label}`} className="binding-input" readOnly value={recording === s.id ? "Press keys…" : bindingFor(s, system.bindings).replaceAll("Meta", "Win / Cmd")} onFocus={() => { setRecording(s.id); setError(""); }} onBlur={() => setRecording(null)} onKeyDown={event => { event.preventDefault(); event.stopPropagation(); if (event.nativeEvent.isComposing || event.repeat) return; if (event.key === "Escape") { event.currentTarget.blur(); return; } const value = eventBinding(event.nativeEvent); if (!value) return; const problem = system.setBinding(s.id, value); setError(problem ?? ""); if (!problem) event.currentTarget.blur(); }} /> : <kbd>{bindingFor(s, system.bindings).replaceAll("Meta", "Win / Cmd")}</kbd>}</div>)}</div>
-    <small className="shortcut-platform-note">Win / Cmd keys may be reserved by your operating system. Alternate bindings remain available.</small>
+    <small className="shortcut-platform-note">Alt+Space, Alt+Tab, Alt+F4, Win / Cmd and F1 may be intercepted by your browser or operating system. Keystrokes that never reach NEXUS cannot be detected. Alternate bindings and the taskbar Command Palette button remain available.</small>
+    {system.restriction && <p role="status" className="local-error">{system.restriction}</p>}
+    <Button variant="system" onClick={() => system.show("palette")}><Search size={16} />Command Palette</Button>
   </section>;
 }
 function ShortcutPanel() {
