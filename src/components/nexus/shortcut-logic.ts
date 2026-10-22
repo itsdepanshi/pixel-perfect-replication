@@ -47,12 +47,13 @@ export function validBinding(value: string) {
 export function parseBindings(raw: string | null): Bindings {
   try { const parsed: unknown = JSON.parse(raw ?? "{}"); if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {}; return Object.fromEntries(Object.entries(parsed).filter(([id, value]) => shortcuts.some(s => s.id === id) && typeof value === "string" && validBinding(value))); } catch { return {}; }
 }
-export function eligible(shortcut: Shortcut, active: AppId | null, typing: boolean, editor: boolean, modal: boolean) {
-  if (modal || (typing && !(shortcut.id === "save" && editor))) return false;
+export function eligible(shortcut: Shortcut, active: AppId | null, typing: boolean, editor: boolean, modal: boolean, binding = "") {
+  const combo = shortcut.scope === "global" && /(?:^|\+)(?:Ctrl|Alt|Meta)\+/.test(binding);
+  if (modal || (typing && !combo && !(shortcut.id === "save" && editor))) return false;
   return shortcut.scope === "global" || shortcut.scope === active || (shortcut.scope === "editor" && (active === "notes" || active === "forge")) || (shortcut.scope === "refresh" && (active === "files" || active === "disk" || active === "trash"));
 }
 export function findShortcut(binding: string, bindings: Bindings, active: AppId | null, typing = false, editor = false, modal = false) {
-  return shortcuts.find(s => (bindingFor(s, bindings) === binding || s.alternate === binding) && eligible(s, active, typing, editor, modal));
+  return shortcuts.find(s => (bindingFor(s, bindings) === binding || s.alternate === binding) && eligible(s, active, typing, editor, modal, binding));
 }
 export function bindingConflict(id: string, value: string, bindings: Bindings) {
   const own = shortcuts.find(s => s.id === id); if (!own) return "Unknown shortcut";
