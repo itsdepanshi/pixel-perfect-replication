@@ -28,4 +28,5 @@
 - Register discard protection through WindowManager close guards and isolate studio shortcuts to the active window, because drawing must not override other desktop applications.
 
 - Dispatch desktop and editor shortcuts through ShortcutSystem and registered app actions; Forge has no duplicate key listener, so custom bindings and context safeguards apply consistently.
+- Observe shortcut cancellation failures in the existing dispatcher only; never infer OS interception from missing events, because browsers cannot expose keystrokes they never receive.
 - Store user-created virtual folders in the existing IndexedDB library and hydrate the shared directory projection on filesystem reads, so Files and the terminal see the same durable paths.
