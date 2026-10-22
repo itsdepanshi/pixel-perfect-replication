@@ -55,3 +55,9 @@ describe("NEXUS keyboard rules", () => {
     expect(nextWindow(windows.slice(0, 2), "files")).toBeNull(); expect(nextWindow([], null)).toBeNull();
   });
 });
+import { findShortcut as fs2 } from "./shortcut-logic";
+import { test as t2, expect as e2 } from "vitest";
+t2("global modifier shortcuts work while typing, plain keys do not", () => {
+  e2(fs2("Ctrl+K", {}, "terminal", true)?.id).toBe("palette");
+  e2(fs2("F2", {}, "files", true)).toBeUndefined();
+});
