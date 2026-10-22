@@ -48,7 +48,7 @@ export function parseBindings(raw: string | null): Bindings {
   try { const parsed: unknown = JSON.parse(raw ?? "{}"); if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {}; return Object.fromEntries(Object.entries(parsed).filter(([id, value]) => shortcuts.some(s => s.id === id) && typeof value === "string" && validBinding(value))); } catch { return {}; }
 }
 export function eligible(shortcut: Shortcut, active: AppId | null, typing: boolean, editor: boolean, modal: boolean, binding = "") {
-  const combo = shortcut.scope === "global" && /(?:^|\+)(?:Ctrl|Alt|Meta)\+/.test(binding);
+  const combo = shortcut.scope === "global" && /(?:^|\+)(?:Ctrl|Meta)\+/.test(binding) && !/Ctrl\+Alt/.test(binding);
   if (modal || (typing && !combo && !(shortcut.id === "save" && editor))) return false;
   return shortcut.scope === "global" || shortcut.scope === active || (shortcut.scope === "editor" && (active === "notes" || active === "forge")) || (shortcut.scope === "refresh" && (active === "files" || active === "disk" || active === "trash"));
 }
