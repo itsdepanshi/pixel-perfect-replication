@@ -1,6 +1,6 @@
 # NEXUS OS Phase 1
 ## Keyboard shortcuts
-- [ ] Update Windows-style bindings and clickable palette fallback; verify preview actions.
+- [x] Update Windows-style bindings and clickable palette fallback; verify preview actions (automated Chromium, not physical OS interception).
 - [ ] Test published shortcuts — blocked until a published application is available.
 - [x] Add shared configurable dispatch, window controls, launcher, palette and searchable help.
 - [x] Wire safe Files, Notes and Forge actions and persistent folder creation.
