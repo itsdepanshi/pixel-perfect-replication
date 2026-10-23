@@ -5,6 +5,7 @@
 - [x] Add shared configurable dispatch, window controls, launcher, palette and searchable help.
 - [x] Wire safe Files, Notes and Forge actions and persistent folder creation.
 - [x] Verify bindings, contexts, persistence, destructive confirmations and existing tests.
+- [x] Verify Arcade input stays isolated from Notes and Command Palette; inactive/minimized games remain paused on restore (preview Chromium).
 ## PIXEL//FORGE filesystem integration
 - [x] Connect project saves and image exports to the shared IndexedDB filesystem projection.
 - [x] Connect Files open/rename/delete/move and terminal ls/cd/cat.
