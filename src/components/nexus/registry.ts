@@ -1,4 +1,4 @@
-import { Terminal, Folder, FileText, Disc3, Settings2, Gamepad2, Paintbrush, Trash2, HardDrive } from "lucide-react";
+import { Terminal, Folder, FileText, Disc3, Settings2, Gamepad2, Paintbrush, Trash2, HardDrive, Activity } from "lucide-react";
 
 export const apps = [
   { id: "terminal", name: "Terminal", icon: Terminal, code: "01", subtitle: "SYSTEM SHELL" },
@@ -10,5 +10,6 @@ export const apps = [
   { id: "forge", name: "PIXEL//FORGE", icon: Paintbrush, code: "07", subtitle: "DRAWING STUDIO" },
   { id: "trash", name: "Recycle Bin", icon: Trash2, code: "08", subtitle: "DELETED ITEMS" },
   { id: "disk", name: "Disk Management", icon: HardDrive, code: "09", subtitle: "STORAGE" },
+  { id: "tasks", name: "Task Manager", icon: Activity, code: "10", subtitle: "LIVE PROCESSES" },
 ] as const;
 export type AppId = (typeof apps)[number]["id"];

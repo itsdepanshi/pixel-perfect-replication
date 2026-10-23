@@ -11,6 +11,7 @@ import { FilesApp } from "./files-app";
 import { TrashApp } from "./trash-app";
 import { DiskApp } from "./disk-app";
 import { SettingsApp } from "./settings-app";
+import { TaskManagerApp } from "./task-manager-app";
 
 export function AppWindow({ window: w }: { window: WindowState }) {
   const manager = useWindowManager();
@@ -28,7 +29,7 @@ export function AppWindow({ window: w }: { window: WindowState }) {
       <div className="window-title"><Icon size={15} /><span>{app.name.toLowerCase()}</span><span className="window-path">{w.id === "terminal" ? "— root@nexus: ~" : `— /${w.id}`}</span></div>
       <div className="window-controls"><Button variant="window" size="icon" title={`Minimize ${app.name}`} aria-label={`Minimize ${app.name}`} onClick={() => manager.minimize(w.id)}><Minus /></Button><Button variant="window" size="icon" title={`${w.maximized ? "Restore" : "Maximize"} ${app.name}`} aria-label={`${w.maximized ? "Restore" : "Maximize"} ${app.name}`} onClick={() => manager.maximize(w.id)}>{w.maximized ? <Copy /> : <Square />}</Button><Button variant="window" size="icon" className="close-control" title={`Close ${app.name}`} aria-label={`Close ${app.name}`} onClick={() => manager.close(w.id)}><X /></Button></div>
     </header>
-    <div className="window-body">{w.id === "terminal" ? <TerminalApp active={active && !w.minimized} /> : w.id === "notes" ? <NotesApp /> : w.id === "media" ? <MediaApp /> : w.id === "games" ? <ArcadeApp suspended={!active || w.minimized} /> : w.id === "forge" ? <ForgeApp active={active && !w.minimized} /> : w.id === "files" ? <FilesApp /> : w.id === "trash" ? <TrashApp /> : w.id === "disk" ? <DiskApp /> : w.id === "settings" ? <SettingsApp /> : <AppPreview id={w.id} />}</div>
+    <div className="window-body">{w.id === "terminal" ? <TerminalApp active={active && !w.minimized} /> : w.id === "notes" ? <NotesApp /> : w.id === "media" ? <MediaApp /> : w.id === "games" ? <ArcadeApp suspended={!active || w.minimized} /> : w.id === "forge" ? <ForgeApp active={active && !w.minimized} /> : w.id === "files" ? <FilesApp /> : w.id === "trash" ? <TrashApp /> : w.id === "disk" ? <DiskApp /> : w.id === "settings" ? <SettingsApp /> : w.id === "tasks" ? <TaskManagerApp /> : <AppPreview id={w.id} />}</div>
     <footer className="window-footer"><span><span className="status-dot" />{w.id === "terminal" ? "LOCAL SESSION" : w.id === "games" ? "ARCADE ONLINE" : w.id === "forge" ? "CREATIVE SESSION" : w.id === "notes" || w.id === "media" ? "LOCAL LIBRARY" : "APPLICATION PREVIEW"}</span><span>{w.id === "terminal" ? <><LockKeyhole size={10} /> BROWSER SANDBOX</> : w.id === "forge" ? "LOCAL-FIRST STUDIO" : w.id === "notes" || w.id === "media" || w.id === "games" ? "SAVED ON THIS DEVICE" : "PHASE 01"}</span></footer>
   </section>;
 }
