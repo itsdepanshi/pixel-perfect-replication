@@ -1,5 +1,6 @@
 import { readAll, writeRecord, deleteRecord, updateLibraryRecord, subscribeLibrary, type DrawingProject, type StoredImage, type TrashedItem, type StoredFolder } from "./local-storage";
 
+import { notify } from "./notifications";
 export const PICTURES = "/home/root/Pictures";
 export const FORGE_FOLDER = `${PICTURES}/Pixel Forge`;
 export const TRASH = "/system/Trash";
@@ -45,10 +46,14 @@ export function children(path: string, files: VirtualFile[]) {
 }
 export async function saveDrawing(project: DrawingProject, existing: boolean) {
   if (!validFilename(project.name)) throw new Error("Use a project name without slashes.");
-  return updateLibraryRecord<DrawingProject>("drawings", project.id, previous => {
+  let folder = FORGE_FOLDER;
+  const result = await updateLibraryRecord<DrawingProject>("drawings", project.id, previous => {
     if (existing && !previous) throw new Error("This file was deleted. Save it as a new project.");
-    return { ...project, folder: previous?.folder ?? project.folder ?? FORGE_FOLDER };
+    folder = previous?.folder ?? project.folder ?? FORGE_FOLDER;
+    return { ...project, folder };
   });
+  notify({ title: "Project saved", body: `${projectFilename(project.name)} · ${folder}`, kind: "success", app: "files", path: folder });
+  return result;
 }
 export async function renameFile(file: VirtualFile, name: string) {
   if (!validFilename(name)) throw new Error("Use a filename without slashes.");
@@ -67,6 +72,7 @@ export async function deleteFile(file: VirtualFile) {
   const item: TrashedItem = { id: file.id, name: file.name, kind: file.kind, originalFolder: file.folder, deletedAt: Date.now(), size: file.size, width: file.width, height: file.height, payload };
   await writeRecord("trash", item);
   await deleteRecord(file.kind === "project" ? "drawings" : "images", file.id);
+  notify({ title: "Moved to Recycle Bin", body: file.name, kind: "info", app: "trash" });
 }
 export function readTrash() { return readAll<TrashedItem>("trash"); }
 /** Restore returns the file to its original folder, renaming on conflict so no existing file is overwritten. */
@@ -90,15 +96,19 @@ export async function restoreFile(item: TrashedItem) {
     await writeRecord("images", { ...img, name, folder: item.originalFolder, modified: Date.now() });
   }
   await deleteRecord("trash", item.id);
+  notify({ title: "File restored", body: `${name} · ${item.originalFolder}`, kind: "success", app: "files", path: item.originalFolder });
 }
 export function deletePermanently(item: TrashedItem) { return deleteRecord("trash", item.id); }
 export async function emptyTrash() {
   const items = await readTrash();
   for (const item of items) await deleteRecord("trash", item.id);
+  if (items.length) notify({ title: "Recycle Bin emptied", body: `${items.length} item${items.length === 1 ? "" : "s"} permanently deleted`, kind: "warning", app: "trash" });
 }
 export async function saveImage(image: StoredImage) {
   const existing = (await readAll<StoredImage>("images")).find(p => p.folder === image.folder && p.name === image.name);
-  return updateLibraryRecord<StoredImage>("images", existing?.id ?? image.id, () => ({ ...image, id: existing?.id ?? image.id }));
+  const result = await updateLibraryRecord<StoredImage>("images", existing?.id ?? image.id, () => ({ ...image, id: existing?.id ?? image.id }));
+  notify({ title: "Image exported", body: `${image.name} · ${image.folder}`, kind: "success", app: "files", path: image.folder });
+  return result;
 }
 export function metadata(file: VirtualFile) { return [`${file.name} · ${file.kind === "project" ? "NEXUS editable project" : "Image"}`, `${file.width} × ${file.height}${file.layers !== undefined ? ` · ${file.layers} layers` : ""}`, `${file.size} bytes · ${file.folder}`, `Modified: ${new Date(file.modified).toLocaleString()}`]; }
 export function filesystemCommand(command: string, cwd: string, files: VirtualFile[]): { output: string[]; cwd: string } | null {
