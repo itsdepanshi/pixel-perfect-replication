@@ -8,7 +8,7 @@ describe("notifications", () => {
     let list: NexusNotification[] = [];
     for (let i = 0; i < NOTIFY_LIMIT + 5; i++) list = addTo(list, n(String(i)));
     expect(list).toHaveLength(NOTIFY_LIMIT);
-    expect(list[0].id).toBe(String(NOTIFY_LIMIT + 4));
+    expect(list[0]?.id).toBe(String(NOTIFY_LIMIT + 4));
   });
   it("marks one or all read", () => {
     const list = [n("a"), n("b")];
