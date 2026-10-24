@@ -399,3 +399,39 @@
 .process-row { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
 .process-row > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; overflow-wrap: anywhere; }
 .process-row small { color: var(--muted-foreground); font-size: 9px; }
+
+/* Desktop enhancement pack */
+.notify-button { position: relative; }
+.notify-badge { position: absolute; top: -2px; right: -4px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font-size: 8px; line-height: 15px; text-align: center; }
+.notify-center { position: absolute; right: 14px; bottom: 12px; top: 12px; width: min(340px, calc(100% - 28px)); z-index: 9000; display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--border); box-shadow: 0 0 0 1px var(--background); animation: notify-in .2s ease-out; }
+.notify-head, .notify-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 10px; color: var(--muted-foreground); }
+.notify-head > span { display: flex; gap: 6px; align-items: center; color: var(--primary); }
+.notify-list { overflow-y: auto; flex: 1; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.notify-item { display: flex; gap: 6px; border: 1px solid var(--border); border-left: 2px solid var(--primary); background: var(--background); animation: notify-in .25s ease-out; }
+.notify-item[data-kind="warning"] { border-left-color: var(--warning); }
+.notify-item[data-read="true"] { opacity: .62; border-left-color: var(--border); }
+.notify-body { flex: 1; min-width: 0; text-align: left; padding: 8px 10px; display: flex; flex-direction: column; gap: 3px; background: transparent; color: var(--foreground); cursor: pointer; }
+.notify-body strong { font-size: 12px; } .notify-body span { font-size: 11px; color: var(--muted-foreground); overflow-wrap: anywhere; } .notify-body small { font-size: 9px; color: var(--primary); }
+.notify-item-actions { display: flex; flex-direction: column; }
+@keyframes notify-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.lock-screen { position: fixed; inset: 0; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; background: color-mix(in oklch, var(--background) 94%, transparent); backdrop-filter: blur(14px); animation: notify-in .25s ease-out; }
+.lock-clock { font-size: 72px; color: var(--foreground); font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.lock-card { display: flex; flex-direction: column; align-items: center; gap: 10px; width: min(320px, 90vw); padding: 24px; border: 1px solid var(--border); background: var(--card); }
+.lock-card > small { font-size: 9px; color: var(--muted-foreground); letter-spacing: .1em; }
+.lock-card input, .profile-row input { width: 100%; padding: 8px 10px; background: var(--background); border: 1px solid var(--border); color: var(--foreground); }
+.lock-error { color: var(--destructive); font-size: 11px; }
+.lock-avatar { display: grid; place-items: center; width: 64px; height: 64px; border: 1px solid var(--primary); color: var(--primary); font-size: 22px; }
+.lock-avatar.small { width: 38px; height: 38px; font-size: 13px; flex: none; }
+.profile-settings { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+.profile-row { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.profile-row label { display: flex; flex-direction: column; gap: 4px; font-size: 9px; color: var(--muted-foreground); flex: 1; min-width: 160px; }
+.desktop-widgets { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.desktop-widget { position: absolute; width: 210px; pointer-events: auto; border: 1px solid var(--border); background: color-mix(in oklch, var(--card) 86%, transparent); animation: notify-in .3s ease-out; }
+.desktop-widget header { display: flex; align-items: center; gap: 6px; padding: 4px 4px 4px 10px; font-size: 9px; color: var(--muted-foreground); border-bottom: 1px solid var(--border); cursor: grab; touch-action: none; }
+.desktop-widget header span { flex: 1; } .desktop-widget header svg { color: var(--primary); }
+.widget-body { padding: 10px; display: flex; flex-direction: column; gap: 6px; font-size: 11px; color: var(--muted-foreground); }
+.widget-body strong { color: var(--foreground); font-size: 18px; }
+.widget-time { font-size: 34px; color: var(--foreground); font-variant-numeric: tabular-nums; }
+.widget-link { text-align: left; background: transparent; color: var(--foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.widget-link:hover { color: var(--primary); }
+@media (prefers-reduced-motion: reduce) { .notify-center, .notify-item, .lock-screen, .desktop-widget { animation: none; } }

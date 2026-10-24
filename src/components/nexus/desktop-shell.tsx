@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Activity, ArrowUpRight, ChevronRight, Command, Cpu, HardDrive, Hexagon, LayoutGrid, Search, ShieldCheck, Wifi, X } from "lucide-react";
+import { Activity, ArrowUpRight, ChevronRight, Command, Cpu, HardDrive, Hexagon, LayoutGrid, Lock, Search, ShieldCheck, Wifi, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apps, type AppId } from "./registry";
 import { WindowManager, useWindowManager } from "./window-manager";
@@ -9,6 +9,7 @@ import { unlockSecretBonus } from "./arcade/progression";
 import { ARCADE_BONUS_EVENT } from "./arcade/arcade-app";
 import { CURSOR_EVENT, readCursorPreference } from "./settings-app";
 import { ShortcutSystem, useShortcuts } from "./shortcut-system";
+import { DesktopWidgets, LockScreen, NotificationButton, NotificationCenter, toggleWidget, useProfile, useWidgets, widgetNames } from "./desktop-enhancements";
 
 type IconCell = { col: number; row: number };
 const GRID = { x: 22, y: 30, w: 96, h: 104 };
@@ -51,6 +52,9 @@ function Desktop() {
   const [layout, setLayout] = useState<Record<string, IconCell>>(defaultLayout);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const workspaceRef = useRef<HTMLDivElement | null>(null);
+  const [locked, setLocked] = useState(false);
+  const [notifyOpen, setNotifyOpen] = useState(false);
+  const widgets = useWidgets();
   useEffect(() => {
     setCustomCursor(readCursorPreference());
     setLayout(readLayout());
@@ -87,17 +91,22 @@ function Desktop() {
         <Button variant="system" role="menuitem" onClick={() => { autoArrange(); setMenu(null); }}>Auto Arrange</Button>
         <Button variant="system" role="menuitem" onClick={() => { resetLayout(); setMenu(null); }}>Reset Layout</Button>
         <Button variant="system" role="menuitem" aria-pressed={arrangeMode} onClick={() => { setArrangeMode(v => !v); setMenu(null); }}>{arrangeMode ? "Lock Shortcuts" : "Arrange Shortcuts"}</Button>
+        {widgets && (Object.keys(widgetNames) as (keyof typeof widgetNames)[]).map(id => <Button key={id} variant="system" role="menuitemcheckbox" aria-checked={widgets[id].on} onClick={() => { toggleWidget(id); setMenu(null); }}>{widgets[id].on ? "Hide" : "Show"} {widgetNames[id]} Widget</Button>)}
       </div>}
       {showStatus && <aside className="system-status" aria-label="Simulated system status"><div className="system-status-heading"><span><Activity size={12} /> SYSTEM TELEMETRY</span><Button variant="system" size="icon" aria-label="Hide system status" title="Hide system status" onClick={() => setShowStatus(false)}><X /></Button></div><div className="metric"><span><Cpu size={12} /> CPU</span><div className="metric-track"><i /></div><span>12%</span></div><div className="metric memory"><span><HardDrive size={12} /> MEM</span><div className="metric-track"><i /></div><span>2.4 / 8 GB</span></div><p>SIMULATED METRICS <span>●</span></p></aside>}
+      <DesktopWidgets time={time} />
+      {notifyOpen && <NotificationCenter onClose={() => setNotifyOpen(false)} />}
       {manager.windows.map(w => <AppWindow key={w.id} window={w} />)}
       <div className="desktop-bottom-label"><span><ShieldCheck size={12} /> ISOLATED & SECURE</span><span>NEXUS KERNEL / 1.0.0 <ArrowUpRight size={11} /></span></div>
     </div>
-    <Taskbar clock={clock} showStatus={showStatus} toggleStatus={() => setShowStatus(v => !v)} />
+    <Taskbar clock={clock} showStatus={showStatus} toggleStatus={() => setShowStatus(v => !v)} notifyOpen={notifyOpen} toggleNotify={() => setNotifyOpen(v => !v)} lock={() => { setNotifyOpen(false); setLocked(true); }} />
+    {locked && <LockScreen clock={clock} onUnlock={() => setLocked(false)} />}
     {booting && <div className="boot-screen"><div className="boot-content"><div className="boot-logo"><Hexagon /><span>NEXUS<span>://OS</span></span></div><p className="boot-version">BOOT SEQUENCE / KERNEL 1.0.0</p><div className="boot-lines"><p>[ OK ] Initializing isolated environment</p><p>[ OK ] Mounting virtual filesystem</p><p>[ OK ] Loading desktop services</p><p>[ OK ] Welcome to NEXUS OS<span className="boot-cursor">_</span></p></div><Button variant="system" onClick={() => setBooting(false)}>Skip boot <ChevronRight /></Button></div><span className="boot-footer">LOCAL FIRST. ALWAYS.</span></div>}
   </main>;
 }
 export function StatusBar({ time, clock }: { time: Date | null; clock: string }) {
-  return <header className="status-bar"><div className="brand"><Hexagon size={19} /><span>NEXUS<span>://OS</span></span><span className="version-badge">1.0</span></div><div className="session-status"><span className="status-dot" /> SYSTEM ONLINE <span className="status-divider">/</span><span className="session-user">root@nexus</span></div><div className="top-right"><span className="local-status"><Wifi size={13} /> LOCAL SESSION</span><span className="top-date">{time?.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase() ?? "—"}</span><time>{clock}</time></div></header>;
+  const profile = useProfile();
+  return <header className="status-bar"><div className="brand"><Hexagon size={19} /><span>NEXUS<span>://OS</span></span><span className="version-badge">1.0</span></div><div className="session-status"><span className="status-dot" /> SYSTEM ONLINE <span className="status-divider">/</span><span className="session-user">{profile.name}@nexus</span></div><div className="top-right"><span className="local-status"><Wifi size={13} /> LOCAL SESSION</span><span className="top-date">{time?.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase() ?? "—"}</span><time>{clock}</time></div></header>;
 }
 export function DesktopIcon({ id, cell, arrange, onDrop }: { id: AppId; cell: IconCell; arrange: boolean; onDrop: (id: AppId, x: number, y: number) => void }) {
   const manager = useWindowManager();
@@ -116,8 +125,8 @@ export function DesktopIcon({ id, cell, arrange, onDrop }: { id: AppId; cell: Ic
     onClick={() => { if (!arrange) manager.open(id); }}
     onDoubleClick={() => { if (arrange) manager.open(id); }}><span className="shortcut-icon"><Icon /><span className="shortcut-number">{app.code}</span></span><span className="shortcut-name">{app.name}</span></Button>;
 }
-export function Taskbar({ clock, showStatus, toggleStatus }: { clock: string; showStatus: boolean; toggleStatus: () => void }) {
+export function Taskbar({ clock, showStatus, toggleStatus, notifyOpen, toggleNotify, lock }: { clock: string; showStatus: boolean; toggleStatus: () => void; notifyOpen: boolean; toggleNotify: () => void; lock: () => void }) {
   const manager = useWindowManager();
   const shortcuts = useShortcuts();
-  return <footer className="taskbar"><div className="taskbar-left"><Button variant="system" size="icon" aria-label="Open app launcher" title="App launcher" className="launcher-button" onClick={() => shortcuts.show("launcher")}><Command /></Button><Button variant="system" size="icon" aria-label="Open Command Palette" title="Command Palette (Alt+Space; availability depends on browser / OS)" onClick={() => shortcuts.show("palette")}><Search /></Button><span className="taskbar-separator" /><div className="taskbar-apps">{apps.map(app => { const running = manager.windows.some(w => w.id === app.id); const Icon = app.icon; return <Button key={app.id} variant="task" className="taskbar-app" aria-label={`Show ${app.name}`} title={app.name} data-running={running} data-active={manager.active === app.id} onClick={() => manager.open(app.id)}><Icon />{running && <span className="running-indicator" />}</Button>; })}</div></div><div className="taskbar-center"><span className="status-dot" /> {String(manager.windows.length).padStart(2, "0")} PROCESSES <span>/</span> WORKSPACE 01</div><div className="taskbar-right"><Button variant="system" size="icon" title="Toggle simulated system status" aria-label="Toggle simulated system status" aria-pressed={showStatus} onClick={toggleStatus}><Activity /></Button><Wifi size={15} /><span className="taskbar-separator" /><div className="taskbar-clock"><time>{clock.slice(0, 5)}</time><span>LOCAL TIME</span></div></div></footer>;
+  return <footer className="taskbar"><div className="taskbar-left"><Button variant="system" size="icon" aria-label="Open app launcher" title="App launcher" className="launcher-button" onClick={() => shortcuts.show("launcher")}><Command /></Button><Button variant="system" size="icon" aria-label="Open Command Palette" title="Command Palette (Alt+Space; availability depends on browser / OS)" onClick={() => shortcuts.show("palette")}><Search /></Button><span className="taskbar-separator" /><div className="taskbar-apps">{apps.map(app => { const running = manager.windows.some(w => w.id === app.id); const Icon = app.icon; return <Button key={app.id} variant="task" className="taskbar-app" aria-label={`Show ${app.name}`} title={app.name} data-running={running} data-active={manager.active === app.id} onClick={() => manager.open(app.id)}><Icon />{running && <span className="running-indicator" />}</Button>; })}</div></div><div className="taskbar-center"><span className="status-dot" /> {String(manager.windows.length).padStart(2, "0")} PROCESSES <span>/</span> WORKSPACE 01</div><div className="taskbar-right"><NotificationButton open={notifyOpen} onToggle={toggleNotify} /><Button variant="system" size="icon" aria-label="Lock screen" title="Lock screen" onClick={lock}><Lock /></Button><Button variant="system" size="icon" title="Toggle simulated system status" aria-label="Toggle simulated system status" aria-pressed={showStatus} onClick={toggleStatus}><Activity /></Button><Wifi size={15} /><span className="taskbar-separator" /><div className="taskbar-clock"><time>{clock.slice(0, 5)}</time><span>LOCAL TIME</span></div></div></footer>;
 }

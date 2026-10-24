@@ -1,3 +1,4 @@
+import { notify } from "../notifications";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Pencil, Paintbrush, Eraser, Minus, Square, Circle, PaintBucket, Pipette, Hand, Undo2, Redo2, Plus, ZoomIn, ZoomOut, Scan, Save, FolderOpen, Download, ImagePlus, Trash2, Eye, EyeOff, ChevronUp, ChevronDown, HelpCircle, X, Grid2X2, FlipHorizontal2, Grip, FilePlus2, Layers, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { validDimensions, toArtwork, type Point } from "./geometry";
 const tools = [ ["pencil", Pencil, "Pencil · B"], ["brush", Paintbrush, "Brush · P"], ["eraser", Eraser, "Eraser · E"], ["line", Minus, "Line · L"], ["rectangle", Square, "Rectangle · R"], ["ellipse", Circle, "Ellipse · O"], ["fill", PaintBucket, "Fill · F"], ["eyedropper", Pipette, "Eyedropper · I"], ["pan", Hand, "Pan · H"] ] as const;
 const initialColors = ["#A3FF12", "#FFFFFF", "#030504", "#FFB547", "#EF6461", "#59D3E6", "#B886EF", "#F19FC5"];
 type Dialog = "new" | "resize" | "projects" | "save" | "export" | "help" | null;
-function download(file: Blob, name: string) { const url = URL.createObjectURL(file); const a = document.createElement("a"); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 2000); }
+function download(file: Blob, name: string) { const url = URL.createObjectURL(file); const a = document.createElement("a"); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 2000); notify({ title: "Download started", body: name, kind: "info", app: "forge" }); }
 
 export function ForgeApp({ active }: { active: boolean }) {
   const manager = useWindowManager();
