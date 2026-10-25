@@ -1,9 +1,9 @@
 # NEXUS OS Phase 1
 ## Desktop enhancement pack
-- [ ] Phase 2: connected Task Manager and action checks.
-- [ ] Phase 3: durable local profile and lock/unlock session checks.
-- [ ] Phase 4: durable movable widgets and shared-library checks.
-- [ ] Phase 1: durable event notifications and history/action checks.
+- [x] Phase 2: connected Task Manager; preview search, minimize, restore/switch and close checks passed.
+- [x] Phase 3: durable local profile; preview wrong/correct PIN, no-PIN unlock and retained-window checks passed.
+- [x] Phase 4: shared-library widgets; preview clock dragging, position persistence and hide persistence checks passed.
+- [x] Phase 1: real project-save notifications; preview read/all-read, dismiss/clear, folder navigation and refresh persistence checks passed; notification unit tests passed.
 ## Keyboard shortcuts
 - [x] Update Windows-style bindings and clickable palette fallback; verify preview actions (automated Chromium, not physical OS interception).
 - [ ] Test published shortcuts — blocked until a published application is available.
