@@ -9,11 +9,17 @@ import { unlockSecretBonus } from "./arcade/progression";
 import { ARCADE_BONUS_EVENT } from "./arcade/arcade-app";
 import { CURSOR_EVENT, readCursorPreference } from "./settings-app";
 import { ShortcutSystem, useShortcuts } from "./shortcut-system";
+import { ContextMenu, ownsContextMenu, type MenuItem } from "./desktop-context-menu";
+import { createFolder, readDirectories, readFilesystem } from "./virtual-filesystem";
+import { writeRecord } from "./local-storage";
+import { notify } from "./notifications";
 import { DesktopWidgets, LockScreen, NotificationButton, NotificationCenter, toggleWidget, useProfile, useWidgets, widgetNames } from "./desktop-enhancements";
 
 type IconCell = { col: number; row: number };
 const GRID = { x: 22, y: 30, w: 96, h: 104 };
 const LAYOUT_KEY = "nexus-icon-layout";
+const LABELS_KEY = "nexus-icon-labels";
+function readLabels(): Record<string, string> { try { const v = JSON.parse(localStorage.getItem(LABELS_KEY) ?? "{}"); return v && typeof v === "object" ? v : {}; } catch { return {}; } }
 function defaultLayout(): Record<string, IconCell> { return Object.fromEntries(apps.map((app, i) => [app.id, { col: Math.floor(i / 6), row: i % 6 }])); }
 function readLayout(): Record<string, IconCell> {
   const base = defaultLayout();
@@ -50,7 +56,10 @@ function Desktop() {
   const [customCursor, setCustomCursor] = useState(true);
   const [arrangeMode, setArrangeMode] = useState(false);
   const [layout, setLayout] = useState<Record<string, IconCell>>(defaultLayout);
-  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [menu, setMenu] = useState<{ x: number; y: number; icon?: AppId } | null>(null);
+  const [labels, setLabels] = useState<Record<string, string>>({});
+  const [renaming, setRenaming] = useState<AppId | null>(null);
+  const [sync, setSync] = useState<string | null>(null);
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const [locked, setLocked] = useState(false);
   const [notifyOpen, setNotifyOpen] = useState(false);
@@ -58,6 +67,7 @@ function Desktop() {
   useEffect(() => {
     setCustomCursor(readCursorPreference());
     setLayout(readLayout());
+    setLabels(readLabels());
     const onCursor = () => setCustomCursor(readCursorPreference());
     window.addEventListener(CURSOR_EVENT, onCursor);
     return () => window.removeEventListener(CURSOR_EVENT, onCursor);
@@ -67,6 +77,39 @@ function Desktop() {
   const alignToGrid = () => { const next = { ...layout }; const taken = new Set<string>(); for (const app of apps) { const current = next[app.id] ?? { col: 0, row: 0 }; const cell = freeCell(cellFor(GRID.x + current.col * GRID.w, GRID.y + current.row * GRID.h, manager.bounds), taken, manager.bounds); next[app.id] = cell; taken.add(`${cell.col},${cell.row}`); } saveLayout(next); };
   const autoArrange = () => { const next = { ...layout }; const perColumn = Math.max(1, Math.floor((manager.bounds.height - GRID.y) / GRID.h)); apps.forEach((app, i) => { next[app.id] = { col: Math.floor(i / perColumn), row: i % perColumn }; }); saveLayout(next); };
   const resetLayout = () => { saveLayout(defaultLayout()); };
+  const saveLabel = (id: AppId, name: string) => { const next = { ...labels }; const clean = name.trim().slice(0, 40); if (!clean || clean === apps.find(a => a.id === id)?.name) delete next[id]; else next[id] = clean; setLabels(next); try { localStorage.setItem(LABELS_KEY, JSON.stringify(next)); } catch { /* private mode */ } };
+  const refreshDesktop = async () => {
+    setSync("SYNCING DESKTOP…");
+    setLayout(readLayout()); setLabels(readLabels()); setCustomCursor(readCursorPreference());
+    try { await readDirectories(); const files = await readFilesystem(); setSync(`DESKTOP SYNCED · ${files.length} FILES`); } catch { setSync("SYNC FAILED — STORAGE UNAVAILABLE"); }
+    window.setTimeout(() => setSync(null), 1800);
+  };
+  const newFolder = async () => {
+    for (let n = 1; n < 100; n++) {
+      const name = n === 1 ? "New Folder" : `New Folder ${n}`;
+      try { const path = await createFolder("/home/root", name); notify({ title: "Folder created", body: path, kind: "success", app: "files", path }); manager.openFilesAt(path); return; }
+      catch (error) { if (!(error instanceof Error) || !error.message.includes("already exists")) { notify({ title: "Folder not created", body: error instanceof Error ? error.message : "Storage unavailable", kind: "warning" }); return; } }
+    }
+  };
+  const newTextFile = async () => {
+    try { await writeRecord("notes", { id: crypto.randomUUID(), title: "New Text File", body: "", modified: Date.now() }); notify({ title: "Text file created", body: "New Text File in Notes", kind: "success", app: "notes" }); manager.close("notes"); window.setTimeout(() => manager.open("notes"), 0); }
+    catch { notify({ title: "Text file not created", body: "Local storage is unavailable", kind: "warning" }); }
+  };
+  const desktopItems: MenuItem[] = [
+    { label: "Refresh", action: () => void refreshDesktop() },
+    { label: "Arrange Icons", items: [{ label: "Auto Arrange", action: autoArrange }, { label: "Align to Grid", action: alignToGrid }, { label: "Reset Layout", action: resetLayout }, { label: arrangeMode ? "Lock Shortcuts" : "Arrange Shortcuts", action: () => setArrangeMode(v => !v) }] },
+    { label: "New", items: [{ label: "New Folder", action: () => void newFolder() }, { label: "New Text File", action: () => void newTextFile() }] },
+    ...(widgets ? [{ label: "Widgets", items: (Object.keys(widgetNames) as (keyof typeof widgetNames)[]).map(id => ({ label: `${widgets[id].on ? "Hide" : "Show"} ${widgetNames[id]}`, action: () => toggleWidget(id) })) }] : []),
+    { label: "Personalize", action: () => manager.open("settings") },
+    { label: "Open Terminal", action: () => manager.open("terminal") },
+    { label: "Display Settings", action: () => manager.open("settings") },
+  ];
+  const iconItems = (id: AppId): MenuItem[] => [
+    { label: "Open", action: () => manager.open(id) },
+    { label: "Rename", action: () => setRenaming(id) },
+    { label: "Create Shortcut", disabled: true, hint: "System apps already have their desktop shortcut" },
+    { label: "Move to Recycle Bin", disabled: true, hint: "System apps cannot be deleted" },
+  ];
   useEffect(() => {
     setTime(new Date());
     const clock = window.setInterval(() => setTime(new Date()), 1000);
@@ -82,17 +125,12 @@ function Desktop() {
   const clock = time?.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) ?? "--:--:--";
   return <main className={`desktop-shell ${customCursor ? "custom-cursor" : ""}`}>
     <StatusBar time={time} clock={clock} />
-    <div className="desktop-workspace" ref={workspaceRef} onContextMenu={event => { if ((event.target as HTMLElement).closest(".app-window")) return; event.preventDefault(); const rect = workspaceRef.current?.getBoundingClientRect(); setMenu({ x: Math.min(event.clientX - (rect?.left ?? 0), (rect?.width ?? 0) - 200), y: Math.min(event.clientY - (rect?.top ?? 0), (rect?.height ?? 0) - 190) }); }} onClick={() => setMenu(null)}>
+    <div className="desktop-workspace" ref={workspaceRef} onContextMenu={event => { if (ownsContextMenu(event.target)) return; event.preventDefault(); const rect = workspaceRef.current?.getBoundingClientRect(); setMenu({ x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) }); }}>
       <div className="desktop-wallpaper" aria-hidden="true"><div className="wallpaper-cross cross-top" /><div className="wallpaper-cross cross-bottom" /><div className="wallpaper-identity"><div className="wallpaper-eyebrow"><span /> PERSONAL COMPUTING. REDEFINED.</div><div className="wallpaper-word">NEXUS<span>://OS</span></div><div className="wallpaper-bottom"><span>YOUR SYSTEM. YOUR RULES.</span><span>EST. 2026 — V.1.0</span></div></div><div className="wallpaper-wire"><svg viewBox="0 0 400 400" fill="none"><path d="M200 20 360 110v180L200 380 40 290V110L200 20Z M200 60 325 130v140L200 340 75 270V130L200 60Z M200 100 290 150v100l-90 50-90-50V150l90-50Z M200 140 255 170v60l-55 30-55-30v-60l55-30Z M200 20v120M360 110l-105 60M360 290l-105-60M200 380V260M40 290l105-60M40 110l105 60" /></svg></div><div className="wallpaper-coordinate">NX—01 / LOCAL ENVIRONMENT</div></div>
-      <nav className={`desktop-shortcuts ${arrangeMode ? "is-arranging" : ""}`} aria-label="Desktop applications">{apps.map(app => <DesktopIcon key={app.id} id={app.id} cell={layout[app.id] ?? { col: 0, row: 0 }} arrange={arrangeMode} onDrop={(id, x, y) => { const cell = freeCell(cellFor(x, y, manager.bounds), takenCells(id), manager.bounds); saveLayout({ ...layout, [id]: cell }); }} />)}</nav>
+      <nav className={`desktop-shortcuts ${arrangeMode ? "is-arranging" : ""}`} aria-label="Desktop applications">{apps.map(app => <DesktopIcon key={app.id} id={app.id} label={labels[app.id] ?? app.name} renaming={renaming === app.id} onRename={name => { if (name !== null) saveLabel(app.id, name); setRenaming(null); }} onMenu={(x, y) => { const rect = workspaceRef.current?.getBoundingClientRect(); setMenu({ x: x - (rect?.left ?? 0), y: y - (rect?.top ?? 0), icon: app.id }); }} cell={layout[app.id] ?? { col: 0, row: 0 }} arrange={arrangeMode} onDrop={(id, x, y) => { const cell = freeCell(cellFor(x, y, manager.bounds), takenCells(id), manager.bounds); saveLayout({ ...layout, [id]: cell }); }} />)}</nav>
       <div className="workspace-label"><span className="status-dot" /> WORKSPACE 01 <span>/</span> <span>LOCAL</span><Button variant="system" size="icon" className="arrange-toggle" title={arrangeMode ? "Lock shortcut positions" : "Arrange shortcuts"} aria-label={arrangeMode ? "Lock shortcut positions" : "Arrange shortcuts"} aria-pressed={arrangeMode} onClick={() => setArrangeMode(v => !v)}><LayoutGrid /></Button>{arrangeMode && <span className="arrange-hint">ARRANGE MODE — DRAG ICONS</span>}</div>
-      {menu && <div className="desktop-menu" role="menu" style={{ left: menu.x, top: menu.y }} onClick={event => event.stopPropagation()}>
-        <Button variant="system" role="menuitem" onClick={() => { alignToGrid(); setMenu(null); }}>Align to Grid</Button>
-        <Button variant="system" role="menuitem" onClick={() => { autoArrange(); setMenu(null); }}>Auto Arrange</Button>
-        <Button variant="system" role="menuitem" onClick={() => { resetLayout(); setMenu(null); }}>Reset Layout</Button>
-        <Button variant="system" role="menuitem" aria-pressed={arrangeMode} onClick={() => { setArrangeMode(v => !v); setMenu(null); }}>{arrangeMode ? "Lock Shortcuts" : "Arrange Shortcuts"}</Button>
-        {widgets && (Object.keys(widgetNames) as (keyof typeof widgetNames)[]).map(id => <Button key={id} variant="system" role="menuitemcheckbox" aria-checked={widgets[id].on} onClick={() => { toggleWidget(id); setMenu(null); }}>{widgets[id].on ? "Hide" : "Show"} {widgetNames[id]} Widget</Button>)}
-      </div>}
+      {menu && <ContextMenu key={`${menu.x},${menu.y},${menu.icon ?? ""}`} x={menu.x} y={menu.y} label={menu.icon ? `${labels[menu.icon] ?? apps.find(a => a.id === menu.icon)?.name} options` : "Desktop options"} items={menu.icon ? iconItems(menu.icon) : desktopItems} onClose={() => setMenu(null)} />}
+      {sync && <div className="desktop-sync" role="status"><span className="status-dot" /> {sync}</div>}
       {showStatus && <aside className="system-status" aria-label="Simulated system status"><div className="system-status-heading"><span><Activity size={12} /> SYSTEM TELEMETRY</span><Button variant="system" size="icon" aria-label="Hide system status" title="Hide system status" onClick={() => setShowStatus(false)}><X /></Button></div><div className="metric"><span><Cpu size={12} /> CPU</span><div className="metric-track"><i /></div><span>12%</span></div><div className="metric memory"><span><HardDrive size={12} /> MEM</span><div className="metric-track"><i /></div><span>2.4 / 8 GB</span></div><p>SIMULATED METRICS <span>●</span></p></aside>}
       <DesktopWidgets time={time} />
       {notifyOpen && <NotificationCenter onClose={() => setNotifyOpen(false)} />}
@@ -108,7 +146,7 @@ export function StatusBar({ time, clock }: { time: Date | null; clock: string })
   const profile = useProfile();
   return <header className="status-bar"><div className="brand"><Hexagon size={19} /><span>NEXUS<span>://OS</span></span><span className="version-badge">1.0</span></div><div className="session-status"><span className="status-dot" /> SYSTEM ONLINE <span className="status-divider">/</span><span className="session-user">{profile.name}@nexus</span></div><div className="top-right"><span className="local-status"><Wifi size={13} /> LOCAL SESSION</span><span className="top-date">{time?.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase() ?? "—"}</span><time>{clock}</time></div></header>;
 }
-export function DesktopIcon({ id, cell, arrange, onDrop }: { id: AppId; cell: IconCell; arrange: boolean; onDrop: (id: AppId, x: number, y: number) => void }) {
+export function DesktopIcon({ id, label, renaming, onRename, onMenu, cell, arrange, onDrop }: { id: AppId; label: string; renaming: boolean; onRename: (name: string | null) => void; onMenu: (x: number, y: number) => void; cell: IconCell; arrange: boolean; onDrop: (id: AppId, x: number, y: number) => void }) {
   const manager = useWindowManager();
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const start = useRef<{ px: number; py: number; x: number; y: number; moved: boolean } | null>(null);
@@ -117,13 +155,15 @@ export function DesktopIcon({ id, cell, arrange, onDrop }: { id: AppId; cell: Ic
   const Icon = app.icon;
   const x = GRID.x + cell.col * GRID.w, y = GRID.y + cell.row * GRID.h;
   const pos = drag ?? { x, y };
-  return <Button variant="shortcut" className={`desktop-icon ${drag ? "is-dragging" : ""}`} style={{ position: "absolute", left: pos.x, top: pos.y }} aria-label={`Open ${app.name}`}
+  if (renaming) return <div className="desktop-icon is-renaming" style={{ position: "absolute", left: pos.x, top: pos.y }}><span className="shortcut-icon"><Icon /><span className="shortcut-number">{app.code}</span></span><input className="icon-rename" aria-label={`Rename ${label}`} defaultValue={label} maxLength={40} autoFocus onFocus={e => e.currentTarget.select()} onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") onRename(e.currentTarget.value); if (e.key === "Escape") onRename(null); }} onBlur={e => onRename(e.currentTarget.value)} /></div>;
+  return <Button variant="shortcut" className={`desktop-icon ${drag ? "is-dragging" : ""}`} style={{ position: "absolute", left: pos.x, top: pos.y }} aria-label={`Open ${label}`}
+    onContextMenu={event => { event.preventDefault(); event.stopPropagation(); onMenu(event.clientX, event.clientY); }}
     onPointerDown={event => { if (!arrange || event.button !== 0) return; event.currentTarget.setPointerCapture(event.pointerId); start.current = { px: event.clientX, py: event.clientY, x, y, moved: false }; }}
     onPointerMove={event => { const s = start.current; if (!s) return; const dx = event.clientX - s.px, dy = event.clientY - s.py; if (!s.moved && Math.hypot(dx, dy) < 4) return; s.moved = true; setDrag({ x: s.x + dx, y: s.y + dy }); }}
     onPointerUp={() => { const s = start.current; start.current = null; if (s?.moved && drag) onDrop(id, drag.x, drag.y); setDrag(null); }}
     onPointerCancel={() => { start.current = null; setDrag(null); }}
     onClick={() => { if (!arrange) manager.open(id); }}
-    onDoubleClick={() => { if (arrange) manager.open(id); }}><span className="shortcut-icon"><Icon /><span className="shortcut-number">{app.code}</span></span><span className="shortcut-name">{app.name}</span></Button>;
+    onDoubleClick={() => { if (arrange) manager.open(id); }}><span className="shortcut-icon"><Icon /><span className="shortcut-number">{app.code}</span></span><span className="shortcut-name">{label}</span></Button>;
 }
 export function Taskbar({ clock, showStatus, toggleStatus, notifyOpen, toggleNotify, lock }: { clock: string; showStatus: boolean; toggleStatus: () => void; notifyOpen: boolean; toggleNotify: () => void; lock: () => void }) {
   const manager = useWindowManager();
