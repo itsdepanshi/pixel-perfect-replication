@@ -435,3 +435,13 @@
 .widget-link { text-align: left; background: transparent; color: var(--foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .widget-link:hover { color: var(--primary); }
 @media (prefers-reduced-motion: reduce) { .notify-center, .notify-item, .lock-screen, .desktop-widget { animation: none; } }
+.desktop-submenu-wrap { position: relative; display: flex; }
+.desktop-submenu-wrap > button { flex: 1; justify-content: flex-start; }
+.desktop-menu .menu-chevron { margin-left: auto; }
+.desktop-submenu { top: -5px; left: calc(100% + 4px); }
+.desktop-submenu.flip { left: auto; right: calc(100% + 4px); }
+.desktop-menu button { min-height: 34px; }
+.desktop-sync { position: absolute; z-index: 9000; left: 50%; bottom: 44px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 11px; letter-spacing: .12em; color: var(--primary); background: var(--popover); border: 1px solid var(--border); animation: desktop-sync-in .2s ease-out; }
+@keyframes desktop-sync-in { from { opacity: 0; transform: translate(-50%, 6px); } }
+.desktop-icon.is-renaming { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 82px; }
+.icon-rename { width: 92px; font: inherit; font-size: 11px; text-align: center; color: var(--foreground); background: var(--background); border: 1px solid var(--primary); padding: 2px 4px; }

@@ -6,7 +6,7 @@ export type MenuItem = { label: string; action?: () => void; items?: MenuItem[];
 
 /** Elements that keep their own (or the browser's) context menu. */
 export function ownsContextMenu(target: EventTarget | null) {
-  return !!(target as HTMLElement | null)?.closest?.(".app-window, .desktop-icon, input, textarea, select, canvas, [contenteditable]:not([contenteditable='false']), .desktop-menu, .nexus-widget");
+  return !!(target as HTMLElement | null)?.closest?.(".app-window, .desktop-icon, input, textarea, select, canvas, [contenteditable]:not([contenteditable='false']), .desktop-menu, .desktop-widget");
 }
 
 /** Clamp a menu inside the container. */
