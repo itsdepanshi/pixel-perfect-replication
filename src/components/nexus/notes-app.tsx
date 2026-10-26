@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from "react";
-import { FileText, Plus, Save, Search, Trash2, Check, AlertTriangle } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { FileText, Plus, Save, Search, Trash2, Check, AlertTriangle, ListTodo, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cancelNote, deleteRecord, flushNotes, readAll, scheduleNote, writeRecord, type Note } from "./local-storage";
+import { cancelNote, deleteRecord, flushNotes, readAll, scheduleNote, writeRecord, type Note, type TodoItem } from "./local-storage";
 import { useAppShortcuts } from "./shortcut-system";
 
 export function NotesApp() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [todoDraft, setTodoDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [statuses, setStatuses] = useState<Record<string, string>>({});
@@ -39,6 +40,22 @@ export function NotesApp() {
     setStatuses(prev => ({ ...prev, [note.id]: "Saving..." }));
     scheduleNote(note, ok => saved(note, version, ok));
   }
+  function updateTodos(todos: TodoItem[]) {
+    if (!active) return;
+    const note = { ...active, todos, modified: Date.now() };
+    const version = (versions.current[note.id] ?? 0) + 1;
+    versions.current[note.id] = version;
+    setNotes(prev => prev.map(item => item.id === note.id ? note : item));
+    setStatuses(prev => ({ ...prev, [note.id]: "Saving..." }));
+    scheduleNote(note, ok => saved(note, version, ok));
+  }
+  function addTodo(event: FormEvent) {
+    event.preventDefault();
+    const text = todoDraft.trim();
+    if (!text || !active) return;
+    updateTodos([...(active.todos ?? []), { id: crypto.randomUUID(), text, done: false }]);
+    setTodoDraft("");
+  }
   async function newNote() {
     if (busy) return;
     setBusy(true); setError("");
@@ -65,6 +82,7 @@ export function NotesApp() {
     setBusy(false);
   }
   const status = active ? statuses[active.id] ?? "Saved" : "";
+  const todos = active?.todos ?? [];
   useAppShortcuts("notes", id => { if (id !== "save" || !active || loading || busy || deleting) return false; void manualSave(); return true; });
   return <div className="notes-app local-app">
     <div className="local-app-toolbar"><span className="app-section-title"><FileText size={15} /> NOTES <span>{notes.length.toString().padStart(2, "0")}</span></span><Button variant="system" className="primary-action" disabled={loading || busy} onClick={() => void newNote()}><Plus /> New Note</Button></div>
