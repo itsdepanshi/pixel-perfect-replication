@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from "react";
-import { FileText, Plus, Save, Search, Trash2, Check, AlertTriangle } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { FileText, Plus, Save, Search, Trash2, Check, AlertTriangle, ListTodo, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cancelNote, deleteRecord, flushNotes, readAll, scheduleNote, writeRecord, type Note } from "./local-storage";
+import { cancelNote, deleteRecord, flushNotes, readAll, scheduleNote, writeRecord, type Note, type TodoItem } from "./local-storage";
 import { useAppShortcuts } from "./shortcut-system";
 
 export function NotesApp() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [todoDraft, setTodoDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [statuses, setStatuses] = useState<Record<string, string>>({});
@@ -39,6 +40,22 @@ export function NotesApp() {
     setStatuses(prev => ({ ...prev, [note.id]: "Saving..." }));
     scheduleNote(note, ok => saved(note, version, ok));
   }
+  function updateTodos(todos: TodoItem[]) {
+    if (!active) return;
+    const note = { ...active, todos, modified: Date.now() };
+    const version = (versions.current[note.id] ?? 0) + 1;
+    versions.current[note.id] = version;
+    setNotes(prev => prev.map(item => item.id === note.id ? note : item));
+    setStatuses(prev => ({ ...prev, [note.id]: "Saving..." }));
+    scheduleNote(note, ok => saved(note, version, ok));
+  }
+  function addTodo(event: FormEvent) {
+    event.preventDefault();
+    const text = todoDraft.trim();
+    if (!text || !active) return;
+    updateTodos([...(active.todos ?? []), { id: crypto.randomUUID(), text, done: false }]);
+    setTodoDraft("");
+  }
   async function newNote() {
     if (busy) return;
     setBusy(true); setError("");
@@ -65,12 +82,13 @@ export function NotesApp() {
     setBusy(false);
   }
   const status = active ? statuses[active.id] ?? "Saved" : "";
+  const todos = active?.todos ?? [];
   useAppShortcuts("notes", id => { if (id !== "save" || !active || loading || busy || deleting) return false; void manualSave(); return true; });
   return <div className="notes-app local-app">
     <div className="local-app-toolbar"><span className="app-section-title"><FileText size={15} /> NOTES <span>{notes.length.toString().padStart(2, "0")}</span></span><Button variant="system" className="primary-action" disabled={loading || busy} onClick={() => void newNote()}><Plus /> New Note</Button></div>
     {error && <div className="local-error" role="alert"><AlertTriangle size={13} />{error}</div>}
     <div className="notes-layout"><aside className="notes-sidebar"><label className="local-search"><Search size={13} /><input aria-label="Search notes" placeholder="Search notes..." value={search} onChange={event => setSearch(event.target.value)} /></label><div className="notes-list">{notes.filter(note => `${note.title} ${note.body}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => b.modified - a.modified).map(note => <Button key={note.id} variant="system" className="note-list-item" data-selected={note.id === activeId} onClick={() => { setActiveId(note.id); setDeleting(false); }}><span>{note.title.trim() || "Untitled Note"}</span><time>{new Date(note.modified).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time></Button>)}{!loading && !notes.length && <p className="list-empty">No notes yet</p>}{search && !notes.some(note => `${note.title} ${note.body}`.toLowerCase().includes(search.toLowerCase())) && <p className="list-empty">No matching notes</p>}</div></aside>
-    {active ? <section className="note-editor"><div className="note-editor-tools"><span className={`save-status ${status === "Save failed" ? "save-error" : ""}`} role="status">{status === "Saved" ? <Check size={11} /> : null}{status}</span><Button variant="system" size="sm" onClick={() => void manualSave()}><Save /> Save</Button><Button variant="system" size="icon" aria-label="Delete note" title="Delete note" onClick={() => setDeleting(true)}><Trash2 /></Button></div><input ref={titleInput} className="note-title" aria-label="Note title" placeholder="Untitled Note" value={active.title} onChange={event => update("title", event.target.value)} /><textarea className="note-body" aria-label="Note text" placeholder="Start writing..." value={active.body} onChange={event => update("body", event.target.value)} /><div className="note-editor-footer"><span>{active.body.length.toLocaleString()} CHARACTERS</span><span>LOCAL STORAGE</span></div></section> : <div className="local-empty"><FileText size={32} /><h2>{loading ? "Opening notes..." : "A blank page awaits."}</h2>{!loading && <Button variant="system" className="primary-action" onClick={() => void newNote()} disabled={busy}><Plus /> New Note</Button>}</div>}</div>
+    {active ? <section className="note-editor"><div className="note-editor-tools"><span className={`save-status ${status === "Save failed" ? "save-error" : ""}`} role="status">{status === "Saved" ? <Check size={11} /> : null}{status}</span><Button variant="system" size="sm" onClick={() => void manualSave()}><Save /> Save</Button><Button variant="system" size="icon" aria-label="Delete note" title="Delete note" onClick={() => setDeleting(true)}><Trash2 /></Button></div><input ref={titleInput} className="note-title" aria-label="Note title" placeholder="Untitled Note" value={active.title} onChange={event => update("title", event.target.value)} /><textarea className="note-body" aria-label="Note text" placeholder="Start writing..." value={active.body} onChange={event => update("body", event.target.value)} /><section className="note-todos" aria-label="To-do list"><div className="note-todos-head"><span className="app-section-title"><ListTodo size={13} /> TO-DO <span>{todos.filter(item => item.done).length}/{todos.length}</span></span></div>{todos.map(item => <div className="todo-item" key={item.id}><Button type="button" variant="window" size="icon" className={`todo-tick ${item.done ? "is-done" : ""}`} aria-pressed={item.done} aria-label={`Mark ${item.done ? "not done" : "done"}: ${item.text}`} onClick={() => updateTodos(todos.map(t => t.id === item.id ? { ...t, done: !t.done } : t))}>{item.done ? <Check size={11} /> : <Square size={11} />}</Button><span className={`todo-text ${item.done ? "is-done" : ""}`}>{item.text}</span><Button type="button" variant="system" size="icon" aria-label={`Remove: ${item.text}`} title="Remove item" onClick={() => updateTodos(todos.filter(t => t.id !== item.id))}><X size={11} /></Button></div>)}{!todos.length && <p className="list-empty">No to-do items yet</p>}<form className="todo-add" onSubmit={addTodo}><input aria-label="New to-do item" placeholder="Add item and press Enter..." value={todoDraft} onChange={event => setTodoDraft(event.target.value)} /><Button type="submit" variant="system" size="sm" disabled={!todoDraft.trim()}><Plus size={12} /> Add</Button></form></section><div className="note-editor-footer"><span>{active.body.length.toLocaleString()} CHARACTERS</span><span>LOCAL STORAGE</span></div></section> : <div className="local-empty"><FileText size={32} /><h2>{loading ? "Opening notes..." : "A blank page awaits."}</h2>{!loading && <Button variant="system" className="primary-action" onClick={() => void newNote()} disabled={busy}><Plus /> New Note</Button>}</div>}</div>
     {deleting && active && <div className="local-confirm-overlay"><section className="local-confirm" role="alertdialog" aria-label="Delete note confirmation" aria-modal="true"><Trash2 size={22} /><h2>Delete this note?</h2><p>“{active.title.trim() || "Untitled Note"}” will be permanently deleted.</p><div><Button variant="system" autoFocus disabled={busy} onClick={() => setDeleting(false)}>Cancel</Button><Button variant="system" className="danger-action" disabled={busy} onClick={() => void removeNote()}>Delete permanently</Button></div></section></div>}
   </div>;
 }

@@ -1,4 +1,5 @@
-export type Note = { id: string; title: string; body: string; modified: number };
+export type TodoItem = { id: string; text: string; done: boolean };
+export type Note = { id: string; title: string; body: string; modified: number; todos?: TodoItem[] };
 export type Track = { id: string; name: string; blob: Blob; duration: number | null; added: number };
 export type DrawingProject = { id: string; name: string; folder?: string; width: number; height: number; background: string | null; modified: number; layers: { id: string; name: string; visible: boolean; opacity: number; blob: Blob }[]; swatches: string[] };
 export type StoredImage = { id: string; name: string; folder: string; blob: Blob; width: number; height: number; modified: number };
