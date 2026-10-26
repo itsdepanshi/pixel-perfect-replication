@@ -10,7 +10,7 @@ describe("desktop context menu safeguards", () => {
     expect(clampMenu(-20, -10, 180, 262, 1198, 676)).toEqual({ x: 4, y: 4 });
   });
   it("leaves app windows, drawing canvases, typing fields and widgets in control of right-click", () => {
-    for (const [tag, className] of [["div", "app-window"], ["canvas", ""], ["textarea", ""], ["div", "desktop-widget"]]) {
+    for (const [tag, className] of [["div", "app-window"], ["canvas", ""], ["textarea", ""], ["div", "desktop-widget"]] as const) {
       const element = document.createElement(tag);
       element.className = className;
       expect(ownsContextMenu(element)).toBe(true);
@@ -21,7 +21,7 @@ describe("desktop context menu safeguards", () => {
     const action = vi.fn();
     const close = vi.fn();
     render(<ContextMenu x={20} y={20} label="Desktop options" onClose={close} items={[{ label: "New", items: [{ label: "New Folder", action }] }]} />);
-    const parent = screen.getByRole("menuitem", { name: "New", exact: true });
+    const parent = screen.getByRole("menuitem", { name: /^New$/ });
     fireEvent.keyDown(parent, { key: "ArrowRight" });
     const child = await screen.findByRole("menuitem", { name: "New Folder" });
     child.focus();
