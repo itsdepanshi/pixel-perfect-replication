@@ -1,4 +1,6 @@
 # NEXUS OS Phase 1
+## Desktop context menus
+- [x] Verify desktop/icon actions, submenu keyboard controls, edge placement and app-owned right-click behavior; fixed submenu focus/placement and shared-shortcut isolation. Preview action/persistence checks and 43 focused tests passed.
 ## Desktop enhancement pack
 - [x] Phase 2: connected Task Manager; preview search, minimize, restore/switch and close checks passed.
 - [x] Phase 3: durable local profile; preview wrong/correct PIN, no-PIN unlock and retained-window checks passed.

@@ -29,4 +29,5 @@
 
 - Dispatch desktop and editor shortcuts through ShortcutSystem and registered app actions; Forge has no duplicate key listener, so custom bindings and context safeguards apply consistently.
 - Observe shortcut cancellation failures in the existing dispatcher only; never infer OS interception from missing events, because browsers cannot expose keystrokes they never receive.
+- Desktop context menus own their focused keyboard input and measure submenu placement against workspace bounds, so customized global bindings and screen edges cannot break menu navigation.
 - Store user-created virtual folders in the existing IndexedDB library and hydrate the shared directory projection on filesystem reads, so Files and the terminal see the same durable paths.

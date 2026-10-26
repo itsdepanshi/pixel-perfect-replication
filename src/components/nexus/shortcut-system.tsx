@@ -38,6 +38,7 @@ export function ShortcutSystem({ children }: { children: ReactNode }) {
     let metaSolo = false;
     const dispatch = (event: KeyboardEvent, binding: string) => {
       const state = latest.current; const target = event.target instanceof HTMLElement ? event.target : null;
+      if (target?.closest(".desktop-menu")) return;
       const typing = !!target?.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])");
       const editor = !!target?.closest(".note-title, .note-body");
       const modal = !!state.panel || Array.from(document.querySelectorAll<HTMLElement>("[role='dialog'], [role='alertdialog'], .local-confirm-overlay, .boot-screen, [aria-busy='true']")).some(element => element.getClientRects().length > 0);
