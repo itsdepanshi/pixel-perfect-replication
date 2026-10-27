@@ -1,4 +1,4 @@
-import { readAll, writeRecord, deleteRecord, updateLibraryRecord, subscribeLibrary, type DrawingProject, type StoredImage, type TrashedItem, type StoredFolder } from "./local-storage";
+import { readAll, writeRecord, deleteRecord, updateLibraryRecord, subscribeLibrary, type DrawingProject, type StoredImage, type TrashedItem, type StoredFolder, type ImportedFile } from "./local-storage";
 
 import { notify } from "./notifications";
 export const PICTURES = "/home/root/Pictures";
@@ -25,8 +25,9 @@ export async function createFolder(parent: string, name: string) {
   await readDirectories();
   return id;
 }
-export function permanentlyDeleteFile(file: VirtualFile) { return deleteRecord(file.kind === "project" ? "drawings" : "images", file.id); }
-export type VirtualFile = { id: string; name: string; folder: string; kind: "project" | "image"; size: number; width: number; height: number; modified: number; layers?: number; project?: DrawingProject; image?: StoredImage };
+function fileStore(kind: VirtualFile["kind"]) { return kind === "project" ? "drawings" : kind === "image" ? "images" : "files"; }
+export function permanentlyDeleteFile(file: VirtualFile) { return deleteRecord(fileStore(file.kind), file.id); }
+export type VirtualFile = { id: string; name: string; folder: string; kind: "project" | "image" | "file"; size: number; width: number; height: number; modified: number; layers?: number; project?: DrawingProject; image?: StoredImage; imported?: ImportedFile };
 export const subscribeFilesystem = subscribeLibrary;
 export function resolvePath(path: string, cwd = "/home/root") {
   const parts: string[] = [];
@@ -38,9 +39,26 @@ export function projectFilename(name: string) { return name.replace(/\.nexus$/i,
 export function validFilename(name: string) { return !!name.trim() && !/[\/\\\x00-\x1f]/.test(name) && name !== "." && name !== ".."; }
 export function projectFile(p: DrawingProject): VirtualFile { return { id: p.id, name: projectFilename(p.name), folder: p.folder ?? FORGE_FOLDER, kind: "project", size: p.layers.reduce((sum, l) => sum + l.blob.size, 0), width: p.width, height: p.height, modified: p.modified, layers: p.layers.length, project: p }; }
 export async function readFilesystem(): Promise<VirtualFile[]> {
-  const [projects, images] = await Promise.all([readAll<DrawingProject>("drawings"), readAll<StoredImage>("images"), readDirectories()]);
-  return [...projects.map(projectFile), ...images.map(image => ({ ...image, kind: "image" as const, size: image.blob.size, image }))];
+  const [projects, images, imported] = await Promise.all([readAll<DrawingProject>("drawings"), readAll<StoredImage>("images"), readAll<ImportedFile>("files"), readDirectories()]);
+  return [...projects.map(projectFile), ...images.map(image => ({ ...image, kind: "image" as const, size: image.blob.size, image })), ...imported.map(file => ({ id: file.id, name: file.name, folder: file.folder, modified: file.modified, kind: "file" as const, size: file.blob.size, width: 0, height: 0, imported: file }))];
 }
+/** Every type stays opaque: a .nexus or executable import is not a native project or runnable program. */
+export async function importComputerFile(input: { name: string; blob: Blob; modified: number }, folder: string) {
+  await readDirectories();
+  if (!directories.includes(folder) || folder === TRASH) throw new Error("Choose an existing folder outside the Recycle Bin.");
+  if (!validFilename(input.name)) throw new Error("Use a filename without slashes.");
+  const taken = new Set((await readFilesystem()).filter(f => f.folder === folder).map(f => f.name.toLowerCase()));
+  const dot = input.name.lastIndexOf(".");
+  const base = dot > 0 ? input.name.slice(0, dot) : input.name;
+  const ext = dot > 0 ? input.name.slice(dot) : "";
+  let name = input.name, n = 2;
+  while (taken.has(name.toLowerCase())) name = `${base} (${n++})${ext}`;
+  const file: ImportedFile = { id: crypto.randomUUID(), name, folder, blob: input.blob, modified: input.modified };
+  await writeRecord("files", file);
+  notify({ title: "File imported", body: `${name} · ${folder}`, kind: "success", app: "files", path: folder });
+  return file;
+}
+export function downloadableBlob(file: VirtualFile) { return file.imported?.blob ?? file.image?.blob; }
 export function children(path: string, files: VirtualFile[]) {
   return { folders: directories.filter(folder => folder !== path && resolvePath("..", folder) === path), files: files.filter(file => file.folder === path) };
 }
@@ -58,20 +76,23 @@ export async function saveDrawing(project: DrawingProject, existing: boolean) {
 export async function renameFile(file: VirtualFile, name: string) {
   if (!validFilename(name)) throw new Error("Use a filename without slashes.");
   if (file.kind === "project") return updateLibraryRecord<DrawingProject>("drawings", file.id, p => { if (!p) throw new Error("File no longer exists."); return { ...p, name: name.replace(/\.nexus$/i, ""), modified: Date.now() }; });
+  if (file.kind === "file") return updateLibraryRecord<ImportedFile>("files", file.id, p => { if (!p) throw new Error("File no longer exists."); return { ...p, name, modified: Date.now() }; });
   return updateLibraryRecord<StoredImage>("images", file.id, p => { if (!p) throw new Error("File no longer exists."); return { ...p, name, modified: Date.now() }; });
 }
 export async function moveFile(file: VirtualFile, folder: string) {
   if (!directories.includes(folder)) throw new Error("Folder not found.");
+  if (folder === TRASH) throw new Error("Use Move to Recycle Bin to delete a file.");
   if (file.kind === "project") return updateLibraryRecord<DrawingProject>("drawings", file.id, p => { if (!p) throw new Error("File no longer exists."); return { ...p, folder, modified: Date.now() }; });
+  if (file.kind === "file") return updateLibraryRecord<ImportedFile>("files", file.id, p => { if (!p) throw new Error("File no longer exists."); return { ...p, folder, modified: Date.now() }; });
   return updateLibraryRecord<StoredImage>("images", file.id, p => { if (!p) throw new Error("File no longer exists."); return { ...p, folder, modified: Date.now() }; });
 }
 /** Deletion moves the record into the Recycle Bin; permanent deletion happens only from the bin. */
 export async function deleteFile(file: VirtualFile) {
-  const payload = file.kind === "project" ? file.project : file.image;
+  const payload = file.kind === "project" ? file.project : file.kind === "image" ? file.image : file.imported;
   if (!payload) throw new Error("File data is not available.");
   const item: TrashedItem = { id: file.id, name: file.name, kind: file.kind, originalFolder: file.folder, deletedAt: Date.now(), size: file.size, width: file.width, height: file.height, payload };
   await writeRecord("trash", item);
-  await deleteRecord(file.kind === "project" ? "drawings" : "images", file.id);
+  await deleteRecord(fileStore(file.kind), file.id);
   notify({ title: "Moved to Recycle Bin", body: file.name, kind: "info", app: "trash" });
 }
 export function readTrash() { return readAll<TrashedItem>("trash"); }
@@ -91,6 +112,9 @@ export async function restoreFile(item: TrashedItem) {
   if (item.kind === "project") {
     const p = item.payload as DrawingProject;
     await writeRecord("drawings", { ...p, name: name.replace(/\.nexus$/i, ""), folder: item.originalFolder, modified: Date.now() });
+  } else if (item.kind === "file") {
+    const file = item.payload as ImportedFile;
+    await writeRecord("files", { ...file, name, folder: item.originalFolder, modified: Date.now() });
   } else {
     const img = item.payload as StoredImage;
     await writeRecord("images", { ...img, name, folder: item.originalFolder, modified: Date.now() });
@@ -110,7 +134,7 @@ export async function saveImage(image: StoredImage) {
   notify({ title: "Image exported", body: `${image.name} · ${image.folder}`, kind: "success", app: "files", path: image.folder });
   return result;
 }
-export function metadata(file: VirtualFile) { return [`${file.name} · ${file.kind === "project" ? "NEXUS editable project" : "Image"}`, `${file.width} × ${file.height}${file.layers !== undefined ? ` · ${file.layers} layers` : ""}`, `${file.size} bytes · ${file.folder}`, `Modified: ${new Date(file.modified).toLocaleString()}`]; }
+export function metadata(file: VirtualFile) { return [`${file.name} · ${file.kind === "project" ? "NEXUS editable project" : file.kind === "image" ? "Image" : file.imported?.blob.type || "File"}`, ...(file.kind === "file" ? [] : [`${file.width} × ${file.height}${file.layers !== undefined ? ` · ${file.layers} layers` : ""}`]), `${file.size} bytes · ${file.folder}`, `Modified: ${new Date(file.modified).toLocaleString()}`]; }
 export function filesystemCommand(command: string, cwd: string, files: VirtualFile[]): { output: string[]; cwd: string } | null {
   const match = command.trim().match(/^(ls|cd|cat|pwd)(?:\s+([\s\S]*))?$/); if (!match) return null;
   const cmd = match[1]; const raw = (match[2] ?? "").trim(); const arg = raw.replace(/^(["'])([\s\S]*)\1$/, "$2");

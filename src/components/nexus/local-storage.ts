@@ -3,19 +3,20 @@ export type Note = { id: string; title: string; body: string; modified: number; 
 export type Track = { id: string; name: string; blob: Blob; duration: number | null; added: number };
 export type DrawingProject = { id: string; name: string; folder?: string; width: number; height: number; background: string | null; modified: number; layers: { id: string; name: string; visible: boolean; opacity: number; blob: Blob }[]; swatches: string[] };
 export type StoredImage = { id: string; name: string; folder: string; blob: Blob; width: number; height: number; modified: number };
-export type TrashedItem = { id: string; name: string; kind: "project" | "image"; originalFolder: string; deletedAt: number; size: number; width: number; height: number; payload: DrawingProject | StoredImage };
+export type ImportedFile = { id: string; name: string; folder: string; blob: Blob; modified: number };
+export type TrashedItem = { id: string; name: string; kind: "project" | "image" | "file"; originalFolder: string; deletedAt: number; size: number; width: number; height: number; payload: DrawingProject | StoredImage | ImportedFile };
 export type StoredFolder = { id: string };
 export type Appearance = { id: "desktop-appearance"; theme: "phosphor" | "cyan" | "amber" | "rose"; wallpaper: Blob | null; wallpaperName: string; fit: "cover" | "contain" };
-type Store = "notes" | "tracks" | "drawings" | "images" | "trash" | "folders" | "preferences";
+type Store = "notes" | "tracks" | "drawings" | "images" | "trash" | "folders" | "preferences" | "files";
 const listeners = new Set<() => void>();
 export function subscribeLibrary(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
 function notifyLibrary() { for (const listener of listeners) listener(); }
 let database: Promise<IDBDatabase> | undefined;
 function openDatabase() {
   if (!database) database = new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open("nexus-local-library", 6);
+    const request = indexedDB.open("nexus-local-library", 7);
     request.onupgradeneeded = () => {
-      for (const name of ["notes", "tracks", "drawings", "images", "trash", "folders", "preferences"]) if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: "id" });
+      for (const name of ["notes", "tracks", "drawings", "images", "trash", "folders", "preferences", "files"]) if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: "id" });
     };
     request.onsuccess = () => { request.result.onversionchange = () => { request.result.close(); database = undefined; }; resolve(request.result); };
     request.onerror = () => { database = undefined; reject(request.error); };
@@ -33,7 +34,7 @@ export async function readAll<T>(store: Store): Promise<T[]> {
     request.onerror = () => reject(request.error);
   });
 }
-export async function writeRecord(store: Store, value: Note | Track | DrawingProject | StoredImage | TrashedItem) {
+export async function writeRecord(store: Store, value: Note | Track | DrawingProject | StoredImage | TrashedItem | ImportedFile) {
   const db = await openDatabase();
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(store, "readwrite");
@@ -54,7 +55,7 @@ export async function deleteRecord(store: Store, id: string) {
   });
 }
 /** Atomic read-modify-write keeps Explorer moves/renames from racing artwork saves. */
-export async function updateLibraryRecord<T extends DrawingProject | StoredImage | StoredFolder | Appearance>(store: "drawings" | "images" | "folders" | "preferences", id: string, update: (existing: T | undefined) => T) {
+export async function updateLibraryRecord<T extends DrawingProject | StoredImage | StoredFolder | Appearance | ImportedFile>(store: "drawings" | "images" | "folders" | "preferences" | "files", id: string, update: (existing: T | undefined) => T) {
   const db = await openDatabase();
   return new Promise<T>((resolve, reject) => {
     const tx = db.transaction(store, "readwrite"); const objects = tx.objectStore(store); const request = objects.get(id); let result: T;

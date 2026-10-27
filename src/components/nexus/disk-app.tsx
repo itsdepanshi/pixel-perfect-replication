@@ -15,7 +15,8 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 export function categorize(files: VirtualFile[], notes: Note[], tracks: Track[]): Breakdown {
-  const pictures = files.reduce((sum, f) => sum + f.size, 0);
+  const pictures = files.filter(f => f.kind !== "file").reduce((sum, f) => sum + f.size, 0);
+  const imported = files.filter(f => f.kind === "file").reduce((sum, f) => sum + f.size, 0);
   const media = tracks.reduce((sum, t) => sum + t.blob.size, 0);
   const documents = notes.reduce((sum, n) => sum + n.title.length + n.body.length, 0);
   return [
@@ -23,7 +24,7 @@ export function categorize(files: VirtualFile[], notes: Note[], tracks: Track[])
     { label: "Media", bytes: media },
     { label: "Documents", bytes: documents },
     { label: "Applications", bytes: 0 },
-    { label: "Other", bytes: 0 },
+    { label: "Other", bytes: imported },
   ];
 }
 export function DiskApp() {
