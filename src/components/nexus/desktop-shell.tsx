@@ -14,6 +14,7 @@ import { createFolder, readDirectories, readFilesystem } from "./virtual-filesys
 import { writeRecord } from "./local-storage";
 import { notify } from "./notifications";
 import { DesktopWidgets, LockScreen, NotificationButton, NotificationCenter, toggleWidget, useProfile, useWidgets, widgetNames } from "./desktop-enhancements";
+import { useAppearance, useWallpaperUrl } from "./appearance";
 
 type IconCell = { col: number; row: number };
 const GRID = { x: 22, y: 30, w: 96, h: 104 };
@@ -50,6 +51,12 @@ export function DesktopShell() {
 }
 function Desktop() {
   const manager = useWindowManager();
+  const { appearance } = useAppearance();
+  const wallpaperUrl = useWallpaperUrl(appearance.wallpaper);
+  useEffect(() => {
+    document.documentElement.dataset.nexusTheme = appearance.theme;
+    return () => { delete document.documentElement.dataset.nexusTheme; };
+  }, [appearance.theme]);
   const [booting, setBooting] = useState(true);
   const [time, setTime] = useState<Date | null>(null);
   const [showStatus, setShowStatus] = useState(true);
@@ -126,6 +133,7 @@ function Desktop() {
   return <main className={`desktop-shell ${customCursor ? "custom-cursor" : ""}`}>
     <StatusBar time={time} clock={clock} />
     <div className="desktop-workspace" ref={workspaceRef} onContextMenu={event => { if (ownsContextMenu(event.target)) return; event.preventDefault(); const rect = workspaceRef.current?.getBoundingClientRect(); setMenu({ x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) }); }}>
+      {wallpaperUrl && <img className="desktop-user-wallpaper" data-fit={appearance.fit} src={wallpaperUrl} alt="" aria-hidden="true" />}
       <div className="desktop-wallpaper" aria-hidden="true"><div className="wallpaper-cross cross-top" /><div className="wallpaper-cross cross-bottom" /><div className="wallpaper-identity"><div className="wallpaper-eyebrow"><span /> PERSONAL COMPUTING. REDEFINED.</div><div className="wallpaper-word">NEXUS<span>://OS</span></div><div className="wallpaper-bottom"><span>YOUR SYSTEM. YOUR RULES.</span><span>EST. 2026 — V.1.0</span></div></div><div className="wallpaper-wire"><svg viewBox="0 0 400 400" fill="none"><path d="M200 20 360 110v180L200 380 40 290V110L200 20Z M200 60 325 130v140L200 340 75 270V130L200 60Z M200 100 290 150v100l-90 50-90-50V150l90-50Z M200 140 255 170v60l-55 30-55-30v-60l55-30Z M200 20v120M360 110l-105 60M360 290l-105-60M200 380V260M40 290l105-60M40 110l105 60" /></svg></div><div className="wallpaper-coordinate">NX—01 / LOCAL ENVIRONMENT</div></div>
       <nav className={`desktop-shortcuts ${arrangeMode ? "is-arranging" : ""}`} aria-label="Desktop applications">{apps.map(app => <DesktopIcon key={app.id} id={app.id} label={labels[app.id] ?? app.name} renaming={renaming === app.id} onRename={name => { if (name !== null) saveLabel(app.id, name); setRenaming(null); }} onMenu={(x, y) => { const rect = workspaceRef.current?.getBoundingClientRect(); setMenu({ x: x - (rect?.left ?? 0), y: y - (rect?.top ?? 0), icon: app.id }); }} cell={layout[app.id] ?? { col: 0, row: 0 }} arrange={arrangeMode} onDrop={(id, x, y) => { const cell = freeCell(cellFor(x, y, manager.bounds), takenCells(id), manager.bounds); saveLayout({ ...layout, [id]: cell }); }} />)}</nav>
       <div className="workspace-label"><span className="status-dot" /> WORKSPACE 01 <span>/</span> <span>LOCAL</span><Button variant="system" size="icon" className="arrange-toggle" title={arrangeMode ? "Lock shortcut positions" : "Arrange shortcuts"} aria-label={arrangeMode ? "Lock shortcut positions" : "Arrange shortcuts"} aria-pressed={arrangeMode} onClick={() => setArrangeMode(v => !v)}><LayoutGrid /></Button>{arrangeMode && <span className="arrange-hint">ARRANGE MODE — DRAG ICONS</span>}</div>

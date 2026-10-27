@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## NEXUS architecture
+- Store desktop appearance and wallpaper blobs in the shared IndexedDB preferences store; apply theme tokens at the document root and revoke runtime image URLs, so personalization is durable without duplicating files or styling systems.
 - Keep the desktop in modular `src/components/nexus` components with a shared registry, because shortcuts, taskbar and windows must represent the same applications.
 - Own all window geometry, stacking and lifecycle in WindowManager; AppWindow alone handles pointer dragging so application content never duplicates window behavior.
 - Execute terminal commands through a browser-safe allowlisted pure function; never connect the preview terminal to a real shell.

@@ -5,16 +5,17 @@ export type DrawingProject = { id: string; name: string; folder?: string; width:
 export type StoredImage = { id: string; name: string; folder: string; blob: Blob; width: number; height: number; modified: number };
 export type TrashedItem = { id: string; name: string; kind: "project" | "image"; originalFolder: string; deletedAt: number; size: number; width: number; height: number; payload: DrawingProject | StoredImage };
 export type StoredFolder = { id: string };
-type Store = "notes" | "tracks" | "drawings" | "images" | "trash" | "folders";
+export type Appearance = { id: "desktop-appearance"; theme: "phosphor" | "cyan" | "amber" | "rose"; wallpaper: Blob | null; wallpaperName: string; fit: "cover" | "contain" };
+type Store = "notes" | "tracks" | "drawings" | "images" | "trash" | "folders" | "preferences";
 const listeners = new Set<() => void>();
 export function subscribeLibrary(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
 function notifyLibrary() { for (const listener of listeners) listener(); }
 let database: Promise<IDBDatabase> | undefined;
 function openDatabase() {
   if (!database) database = new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open("nexus-local-library", 5);
+    const request = indexedDB.open("nexus-local-library", 6);
     request.onupgradeneeded = () => {
-      for (const name of ["notes", "tracks", "drawings", "images", "trash", "folders"]) if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: "id" });
+      for (const name of ["notes", "tracks", "drawings", "images", "trash", "folders", "preferences"]) if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: "id" });
     };
     request.onsuccess = () => { request.result.onversionchange = () => { request.result.close(); database = undefined; }; resolve(request.result); };
     request.onerror = () => { database = undefined; reject(request.error); };
@@ -53,7 +54,7 @@ export async function deleteRecord(store: Store, id: string) {
   });
 }
 /** Atomic read-modify-write keeps Explorer moves/renames from racing artwork saves. */
-export async function updateLibraryRecord<T extends DrawingProject | StoredImage | StoredFolder>(store: "drawings" | "images" | "folders", id: string, update: (existing: T | undefined) => T) {
+export async function updateLibraryRecord<T extends DrawingProject | StoredImage | StoredFolder | Appearance>(store: "drawings" | "images" | "folders" | "preferences", id: string, update: (existing: T | undefined) => T) {
   const db = await openDatabase();
   return new Promise<T>((resolve, reject) => {
     const tx = db.transaction(store, "readwrite"); const objects = tx.objectStore(store); const request = objects.get(id); let result: T;

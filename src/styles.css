@@ -62,6 +62,28 @@
 }
 
 /* NEXUS phosphor terminal palette */
+:root { --theme-phosphor: oklch(0.906 0.255 127); --theme-cyan: oklch(0.84 0.14 205); --theme-amber: oklch(0.819 0.15 74); --theme-rose: oklch(0.8 0.15 355); }
+:root[data-nexus-theme="cyan"] { --primary: var(--theme-cyan); --accent: oklch(0.225 0.025 205); --wallpaper-ink: oklch(0.26 0.04 205); }
+:root[data-nexus-theme="amber"] { --primary: var(--theme-amber); --accent: oklch(0.225 0.025 74); --wallpaper-ink: oklch(0.26 0.04 74); }
+:root[data-nexus-theme="rose"] { --primary: var(--theme-rose); --accent: oklch(0.225 0.025 355); --wallpaper-ink: oklch(0.26 0.04 355); }
+.personalize-settings { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 14px; }
+.appearance-options { border: 0; padding: 0; margin: 12px 0; min-width: 0; }
+.appearance-options legend, .wallpaper-settings h4 { font: 500 11px var(--font-controls); margin-bottom: 10px; color: var(--foreground); }
+.theme-choices, .appearance-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.theme-choice { font-size: 10px; min-width: 105px; justify-content: flex-start; }
+.theme-choice[aria-pressed="true"], .appearance-actions [aria-pressed="true"] { border-color: var(--primary); background: var(--accent); color: var(--primary); }
+.theme-swatch { width: 16px; height: 16px; flex-shrink: 0; background: var(--swatch); }
+.swatch-phosphor { --swatch: var(--theme-phosphor); }.swatch-cyan { --swatch: var(--theme-cyan); }.swatch-amber { --swatch: var(--theme-amber); }.swatch-rose { --swatch: var(--theme-rose); }
+.wallpaper-preview { width: min(100%, 320px); aspect-ratio: 16 / 9; border: 1px solid var(--border); background: var(--background); display: grid; place-items: center; overflow: hidden; }
+.wallpaper-preview > span { font: 600 28px var(--font-system); color: var(--primary); }.wallpaper-preview > span > span { font-size: 18px; }
+.wallpaper-preview img { width: 100%; height: 100%; object-fit: cover; }
+.wallpaper-name { font-size: 9px; color: var(--muted-foreground); overflow-wrap: anywhere; margin: 8px 0 12px; }
+.appearance-actions button { font-size: 10px; }
+.appearance-error { font-size: 10px; color: var(--warning); }
+.desktop-user-wallpaper { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.desktop-user-wallpaper[data-fit="contain"], .wallpaper-preview[data-fit="contain"] img { object-fit: contain; }
+.desktop-workspace:has(.desktop-user-wallpaper) .desktop-wallpaper { display: none; }
+.desktop-workspace:has(.desktop-user-wallpaper) .shortcut-name { background: var(--background); padding: 2px 4px; }
 :root {
   --radius: 0rem;
   --background: oklch(0.112 0.009 153);

@@ -1,4 +1,6 @@
 # NEXUS OS Phase 1
+## Personalize
+- [ ] Add persistent color themes and uploaded wallpaper with fit controls; verify changes and refresh persistence.
 ## Desktop context menus
 - [x] Verify desktop/icon actions, submenu keyboard controls, edge placement and app-owned right-click behavior; fixed submenu focus/placement and shared-shortcut isolation. Preview action/persistence checks and 43 focused tests passed.
 ## Desktop enhancement pack
