@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Trash2, Undo2, XCircle, Paintbrush, FileImage } from "lucide-react";
+import { Trash2, Undo2, XCircle, Paintbrush, FileImage, File as FileIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { readTrash, restoreFile, deletePermanently, emptyTrash, subscribeFilesystem } from "./virtual-filesystem";
 import type { TrashedItem } from "./local-storage";
@@ -24,9 +24,9 @@ export function TrashApp() {
     <div className="preview-list files-list">
       {items.length === 0 && <div><Trash2 size={15} /><Button variant="system" className="files-entry" disabled><pre>Recycle Bin is empty</pre></Button></div>}
       {items.map(item => <div key={item.id}>
-        {item.kind === "project" ? <Paintbrush size={15} /> : <FileImage size={15} />}
+        {item.kind === "project" ? <Paintbrush size={15} /> : item.kind === "image" ? <FileImage size={15} /> : <FileIcon size={15} />}
         <Button variant="system" className="files-entry" aria-label={`Deleted file ${item.name}`} onClick={() => void action(() => restoreFile(item))} title="Restore to original location"><pre>{item.name}</pre></Button>
-        <small>{item.kind === "project" ? "NEXUS project" : "Image"} · from {item.originalFolder} · {new Date(item.deletedAt).toLocaleString()}</small>
+        <small>{item.kind === "project" ? "NEXUS project" : item.kind === "image" ? "Image" : "File"} · from {item.originalFolder} · {new Date(item.deletedAt).toLocaleString()}</small>
         <Button variant="system" size="icon" title={`Restore ${item.name}`} aria-label={`Restore ${item.name}`} onClick={() => void action(() => restoreFile(item))}><Undo2 /></Button>
         <Button variant="system" size="icon" title={`Delete ${item.name} permanently`} aria-label={`Delete ${item.name} permanently`} onClick={() => { if (window.confirm(`Permanently delete “${item.name}”? This cannot be undone.`)) void action(() => deletePermanently(item)); }}><XCircle /></Button>
       </div>)}

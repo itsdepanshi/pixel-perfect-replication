@@ -1,4 +1,6 @@
 # NEXUS OS Phase 1
+## Computer file transfers
+- [ ] Import arbitrary files into the current Files folder, with upload/drop and download; preserve bytes and verify persistence, rename/move and Recycle Bin.
 ## Personalize
 - [x] Add persistent color themes and uploaded wallpaper with fill/fit controls; preview upload, theme, refresh persistence and original restoration verified; 13 focused tests passed.
 ## Desktop context menus
