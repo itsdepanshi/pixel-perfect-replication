@@ -54,8 +54,8 @@ function Desktop() {
   const { appearance } = useAppearance();
   const wallpaperUrl = useWallpaperUrl(appearance.wallpaper);
   useEffect(() => {
-    document.documentElement.dataset.nexusTheme = appearance.theme;
-    return () => { delete document.documentElement.dataset.nexusTheme; };
+    document.documentElement.dataset["nexusTheme"] = appearance.theme;
+    return () => { delete document.documentElement.dataset["nexusTheme"]; };
   }, [appearance.theme]);
   const [booting, setBooting] = useState(true);
   const [time, setTime] = useState<Date | null>(null);
