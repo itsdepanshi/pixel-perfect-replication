@@ -391,7 +391,11 @@
 .arrange-hint { margin-left: 8px; color: var(--primary); }
 .desktop-menu { position: absolute; z-index: 9000; display: flex; flex-direction: column; min-width: 180px; padding: 4px; background: var(--popover); border: 1px solid var(--border); box-shadow: 0 10px 30px color-mix(in oklab, var(--background) 70%, transparent); }
 .desktop-menu > button { justify-content: flex-start; }
-.desktop-shell.custom-cursor, .desktop-shell.custom-cursor * { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cpath d='M2 2l7 18 2.5-7.5L19 10z' fill='%23111' stroke='%23b8ff3c' stroke-width='1.5'/%3E%3C/svg%3E") 2 2, auto; }
+:root { --nexus-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cpath d='M2 2l7 18 2.5-7.5L19 10z' fill='%23111' stroke='oklch(0.906%200.255%20127)' stroke-width='1.5'/%3E%3C/svg%3E"); }
+:root[data-nexus-theme="cyan"] { --nexus-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cpath d='M2 2l7 18 2.5-7.5L19 10z' fill='%23111' stroke='oklch(0.84%200.14%20205)' stroke-width='1.5'/%3E%3C/svg%3E"); }
+:root[data-nexus-theme="amber"] { --nexus-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cpath d='M2 2l7 18 2.5-7.5L19 10z' fill='%23111' stroke='oklch(0.819%200.15%2074)' stroke-width='1.5'/%3E%3C/svg%3E"); }
+:root[data-nexus-theme="rose"] { --nexus-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cpath d='M2 2l7 18 2.5-7.5L19 10z' fill='%23111' stroke='oklch(0.8%200.15%20355)' stroke-width='1.5'/%3E%3C/svg%3E"); }
+.desktop-shell.custom-cursor, .desktop-shell.custom-cursor * { cursor: var(--nexus-cursor) 2 2, auto; }
 .desktop-shell.custom-cursor input, .desktop-shell.custom-cursor textarea { cursor: text; }
 .disk-numbers { display: flex; flex-wrap: wrap; gap: 6px 18px; }
 @media (min-width: 701px) { .workspace-label { left: auto; right: 24px; top: 52px; } }
