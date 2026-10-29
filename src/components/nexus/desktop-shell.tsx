@@ -15,7 +15,6 @@ import { writeRecord } from "./local-storage";
 import { notify } from "./notifications";
 import { DesktopWidgets, LockScreen, NotificationButton, NotificationCenter, toggleWidget, useProfile, useWidgets, widgetNames } from "./desktop-enhancements";
 import { useAppearance, useWallpaperUrl } from "./appearance";
-import nexusMark from "@/assets/nexus-mark.png";
 
 type IconCell = { col: number; row: number };
 const GRID = { x: 22, y: 30, w: 96, h: 104 };
@@ -148,12 +147,12 @@ function Desktop() {
     </div>
     <Taskbar clock={clock} showStatus={showStatus} toggleStatus={() => setShowStatus(v => !v)} notifyOpen={notifyOpen} toggleNotify={() => setNotifyOpen(v => !v)} lock={() => { setNotifyOpen(false); setLocked(true); }} />
     {locked && <LockScreen clock={clock} onUnlock={() => setLocked(false)} />}
-    {booting && <div className="boot-screen"><div className="boot-content"><div className="boot-logo"><img className="boot-mark" src={nexusMark} alt="" /><span>NEXUS<span>://OS</span></span></div><p className="boot-version">BOOT SEQUENCE / KERNEL 1.0.0</p><div className="boot-lines"><p>[ OK ] Initializing isolated environment</p><p>[ OK ] Mounting virtual filesystem</p><p>[ OK ] Loading desktop services</p><p>[ OK ] Welcome to NEXUS OS<span className="boot-cursor">_</span></p></div><Button variant="system" onClick={() => setBooting(false)}>Skip boot <ChevronRight /></Button></div><span className="boot-footer">LOCAL FIRST. ALWAYS.</span></div>}
+    {booting && <div className="boot-screen"><div className="boot-content"><div className="boot-logo"><span className="nexus-mark boot-mark" aria-hidden="true" /><span>NEXUS<span>://OS</span></span></div><p className="boot-version">BOOT SEQUENCE / KERNEL 1.0.0</p><div className="boot-lines"><p>[ OK ] Initializing isolated environment</p><p>[ OK ] Mounting virtual filesystem</p><p>[ OK ] Loading desktop services</p><p>[ OK ] Welcome to NEXUS OS<span className="boot-cursor">_</span></p></div><Button variant="system" onClick={() => setBooting(false)}>Skip boot <ChevronRight /></Button></div><span className="boot-footer">LOCAL FIRST. ALWAYS.</span></div>}
   </main>;
 }
 export function StatusBar({ time, clock }: { time: Date | null; clock: string }) {
   const profile = useProfile();
-  return <header className="status-bar"><div className="brand"><img className="brand-mark" src={nexusMark} alt="" /><span>NEXUS<span>://OS</span></span><span className="version-badge">1.0</span></div><div className="session-status"><span className="status-dot" /> SYSTEM ONLINE <span className="status-divider">/</span><span className="session-user">{profile.name}@nexus</span></div><div className="top-right"><span className="local-status"><Wifi size={13} /> LOCAL SESSION</span><span className="top-date">{time?.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase() ?? "—"}</span><time>{clock}</time></div></header>;
+  return <header className="status-bar"><div className="brand"><span className="nexus-mark brand-mark" aria-hidden="true" /><span>NEXUS<span>://OS</span></span><span className="version-badge">1.0</span></div><div className="session-status"><span className="status-dot" /> SYSTEM ONLINE <span className="status-divider">/</span><span className="session-user">{profile.name}@nexus</span></div><div className="top-right"><span className="local-status"><Wifi size={13} /> LOCAL SESSION</span><span className="top-date">{time?.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase() ?? "—"}</span><time>{clock}</time></div></header>;
 }
 export function DesktopIcon({ id, label, renaming, onRename, onMenu, cell, arrange, onDrop }: { id: AppId; label: string; renaming: boolean; onRename: (name: string | null) => void; onMenu: (x: number, y: number) => void; cell: IconCell; arrange: boolean; onDrop: (id: AppId, x: number, y: number) => void }) {
   const manager = useWindowManager();
