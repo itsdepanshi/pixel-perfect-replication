@@ -1,6 +1,8 @@
 # NEXUS OS Phase 1
+## Branding
+- [x] Replace placeholder hexagon icon with the NEXUS logo on boot screen and status bar; logo recolours with the selected theme and survives refresh; hidden the "Edit with Lovable" badge on published deployments; tab icon is the NEXUS mark.
 ## Computer file transfers
-- [ ] Import arbitrary files into the current Files folder, with upload/drop and download; preserve bytes and verify persistence, rename/move and Recycle Bin.
+- [x] Import arbitrary files into the current Files folder, with upload/drop and download; preserve bytes and verify persistence, rename/move and Recycle Bin. Preview upload/refresh check and 3 focused transfer tests passed.
 ## Personalize
 - [x] Add persistent color themes and uploaded wallpaper with fill/fit controls; preview upload, theme, refresh persistence and original restoration verified; 13 focused tests passed.
 ## Desktop context menus
